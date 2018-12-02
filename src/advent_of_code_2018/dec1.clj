@@ -1048,7 +1048,7 @@
         (let [[f & remaining] remaining-frequencies
               new-frequency (long (eval (read-string (new-expression (str "" frequency) f))))]
           (if (contains? so-far new-frequency)
-            [new-frequency so-far]
+            new-frequency
             (recur remaining new-frequency (into so-far [new-frequency]))))))))
 
 (let [f "+1

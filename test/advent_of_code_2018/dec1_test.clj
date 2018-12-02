@@ -1,24 +1,28 @@
 (ns advent-of-code-2018.dec1-test
   (:require [clojure.test :refer [deftest testing is]]
-            [advent-of-code-2018.dec1]))
+            [advent-of-code-2018.dec1 :as d]))
 
+;run a single test `lein test :only advent-of-code-2018.dec1-test/a-test`
 (deftest a-test
   (testing "First puzzle: calculate frequencies correctly"
-    (is (= (advent-of-code-2018.dec1/end-frequency
+    (is (= (d/end-frequency
             "+1
 -2
 +3
 +1") 3))
-    (is (= (advent-of-code-2018.dec1/end-frequency
+    (is (= (d/end-frequency
             "+1
 +1
 +1") 3))
-    (is (= (advent-of-code-2018.dec1/end-frequency
+    (is (= (d/end-frequency
             "+1
 +1
 -2") 0))
-    (is (= (advent-of-code-2018.dec1/end-frequency
+    (is (= (d/end-frequency
             "-1
 -2
--3") -6))
-    (is (= (advent-of-code-2018.dec1/detect-duplicate-frequency advent-of-code-2018.dec1/frequency-changes) 1))))
+-3") -6))))
+
+;(deftest b-test
+;  (testing "Second puzzle: reach the same frequency twice"
+;    (is (= ()))))
