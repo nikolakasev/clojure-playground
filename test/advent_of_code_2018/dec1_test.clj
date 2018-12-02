@@ -20,4 +20,5 @@
     (is (= (advent-of-code-2018.dec1/end-frequency
             "-1
 -2
--3") -6))))
+-3") -6))
+    (is (= (advent-of-code-2018.dec1/detect-duplicate-frequency advent-of-code-2018.dec1/frequency-changes) 1))))

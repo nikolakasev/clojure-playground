@@ -1016,7 +1016,7 @@
   (let [[sign cipher] (extract-sign-and-digit frequency)]
     (str "(" sign  " " expression " " cipher ")")))
 
-(defn end-frequency
+(defn end-frequency-expression
   "Calculates the resulting frequency"
   [frequencies]
   (loop [remaining-frequencies (clojure.string/split-lines frequencies)
@@ -1026,6 +1026,60 @@
       (let [[frequency & remaining] remaining-frequencies]
         (recur remaining (new-expression expression frequency))))))
 
-(eval (read-string (end-frequency "+1
+(defn end-frequency
+  [frequency-string]
+  (eval (read-string (end-frequency-expression frequency-string))))
+
+(end-frequency "+1
 -2
--3")))
+-3")
+
+; TODO results in StackOverflowError, is it because of eval or because of recur?
+;(end-frequency frequency-changes)
+
+(defn detect-duplicate-frequency
+  [frequencies-string]
+  (let [frequencies (clojure.string/split-lines frequencies-string)]
+    (loop [remaining-frequencies frequencies
+           frequency 0
+           so-far (set [0])]
+      (if (empty? remaining-frequencies)
+        (recur frequencies frequency so-far)
+        (let [[f & remaining] remaining-frequencies
+              new-frequency (long (eval (read-string (new-expression (str "" frequency) f))))]
+          (if (contains? so-far new-frequency)
+            [new-frequency so-far]
+            (recur remaining new-frequency (into so-far [new-frequency]))))))))
+
+(let [f "+1
+-1"]
+  (detect-duplicate-frequency f))
+
+(let [f "+1
+-2
++3
++1"]
+  (detect-duplicate-frequency f))
+
+(contains? [] 0)
+
+(let [f "+3
++3
++4
+-2
+-4"]
+  (detect-duplicate-frequency f))
+
+(let [f "-6
++3
++8
++5
+-6"]
+  (detect-duplicate-frequency f))
+
+(let [f "+7
++7
+-2
+-7
+-4"]
+  (detect-duplicate-frequency f))
