@@ -99,4 +99,37 @@ urzhyfdplbmeqvrjtbiosngkxc")
 (data/diff (vec "fghij") (vec "fguij"))
 (data/diff (vec "abcde") (vec "axcye"))
 
-(combo/permutations [1 1 2])
+(count (filter nil? (last (data/diff (vec "fghij") (vec "fguij")))))
+
+(nil? nil)
+
+; 2 - pairs, 3 - tripples
+(combo/combinations [1 2 3 4 5] 2)
+
+;TODO how about a zip + groupBy functionality here?
+(combo/combinations (clojure.string/split-lines puzzle-input-smaller) 2)
+
+(defn one-character-difference?
+  [first-string
+   second-string]
+  (= 1 (count (filter (comp not nil?) (first (data/diff (vec first-string) (vec second-string)))))))
+
+(one-character-difference? "fghij" "fguij")
+
+(one-character-difference? "wrzhyfdplumeqvajtbioskfksc" "wrzhyfqplumeqvajtbiosngdxy")
+
+(first (data/diff (vec "fghij") (vec "fguij")))
+
+[\w \r \z \h \y \f nil \p \l \u \m \e \q \v \a \j \t \b \i \o \s]
+
+[[nil nil nil nil nil nil \d nil nil nil nil nil nil nil nil nil nil nil nil nil nil \k \f \k \s \c] [nil nil nil nil nil nil \q nil nil nil nil nil nil nil nil nil nil nil nil nil nil \n \g \d \x \y] [\w \r \z \h \y \f nil \p \l \u \m \e \q \v \a \j \t \b \i \o \s]]
+
+((comp not nil?) nil)
+
+;wrong number of arguments
+;(filter one-character-difference? [["fghij" "fguij"]])
+(filter (fn [[one two]] (one-character-difference? one two)) [["fghij" "fguij"]])
+
+(filter (fn [[one two]] (one-character-difference? one two)) (combo/combinations (clojure.string/split-lines puzzle-input) 2))
+
+;"wrziyfdmlumeqvaatbiosngkxc" "wrziyfdmlumeqvaatbiosngkoc"
