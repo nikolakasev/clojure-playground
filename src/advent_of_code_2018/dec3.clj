@@ -79,12 +79,36 @@
 
 (area-of-fabric id)
 
-(def input-small "#1 @ 387,801: 11x22
+(def input-small (clojure.string/split-lines "#1 @ 387,801: 11x22
 #2 @ 101,301: 19x14
-#3 @ 472,755: 11x16")
+#3 @ 472,755: 11x16"))
 
 (def input
-  (slurp "src/advent_of_code_2018/input-dec3.txt"))
+  (clojure.string/split-lines (slurp "src/advent_of_code_2018/input-dec3.txt")))
+
+(contains? #{[1 2] [3 4] [5 6]} [3 4])
+
+(defn doesnt-overlap
+  [overlap-square-inches
+   claim]
+  (if (every? false? (map
+                      (fn [square-inch] (contains? overlap-square-inches square-inch))
+                      (area-of-fabric claim)))
+    claim))
+
+(def overlaps
+  (filter (fn [[_ list]] (> (count list) 1)) (group-by identity (mapcat area-of-fabric input))))
 
 ;115304 - solved D3P1
-(count (filter (fn [[_ list]] (> (count list) 1)) (group-by identity (mapcat area-of-fabric (clojure.string/split-lines input)))))
+(count overlaps)
+
+(first overlaps)
+
+;because of the group-by
+(def overlaps-keys
+  (map (fn [[i _]] i) overlaps))
+
+(first overlaps-keys)
+
+;solved D3P2
+(filter (comp not nil?) (map (partial doesnt-overlap (set overlaps-keys)) input))
