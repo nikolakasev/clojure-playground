@@ -70,12 +70,20 @@
 
 (defn area-of-fabric
   [claim]
+  ;en example of destructuring the result of the function fabric-span
   (let [[b-x b-y wide tall] (fabric-span claim)]
     (for [x (range b-x (+ b-x wide))
           y (range b-y (+ b-y tall))]
       [x y])))
 
-(mapv #(+ 1 %) (map (fn [y] [3, y]) (range 3 6)))
+;@jumar proposes:
+(defn to-matrix
+  [row matrix-range]
+  (for [dx matrix-range
+        [x y] row]
+    [(+ x dx) y]))
+
+(to-matrix [[1 2] [1 3] [1 4]] (range 0 4))
 
 (area-of-fabric id)
 
