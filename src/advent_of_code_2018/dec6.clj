@@ -83,26 +83,32 @@ bbb.ffffFf")
     [x y]))
 
 (defn closest-location
-  "For an array of locations, determine which one is closest"
+  "For an array of locations, determine which one is closest."
+  [locations] ;[["a" 3] ["b" 1] ["c" 2]] returns b
+  (let [distances (sort-by last locations)]
+    (if (= (last (first distances))
+           (last (second distances)))
+      \. ;two locations have the same distance, so it's a tie
+      (first (first distances)))))
+
+(closest-location [["a" 1] ["b" 2] ["c" 6]])
+
+(defn closest-location-with-case
+  "For an array of locations, determine which one is closest. Capital letter for a location."
   ;TODO is this a good name?
   [locations] ;[["a" 3] ["b" 1] ["c" 2]] returns b
   (let [distances (sort-by last locations)]
     (if (= 0 (last (first distances)))
       (clojure.string/upper-case (first (first distances)))
-      (if (= (last (first distances))
-             (last (second distances)))
-        \. ;two locations have the same distance, so it's a tie
-        (first (first distances))))))
-
-(closest-location [["a" 1] ["b" 2] ["c" 6]])
+      (closest-location distances))))
 
 (defn closest-location-from
-  "Determines the letter of the closest location for a given coordinate"
+  "Determines the letter of the closest location for a given coordinate."
   [locations
    [x y]]
-  (closest-location (map (fn [[name location]]
-                           [name ((partial manhattan-distance x y) (first location) (second location))])
-                         locations)))
+  (closest-location-with-case (map (fn [[name location]]
+                                     [name ((partial manhattan-distance x y) (first location) (second location))])
+                                   locations)))
 
 (first [:a 1])
 
@@ -159,8 +165,8 @@ bbb.ffffFf")
         area-with-letters (map (partial closest-location-from weave-input) area)
         infinite-areas (concat (take max-x area-with-letters)
                                (take max-x (reverse area-with-letters))
-                               (seq (clojure.string/join (map #(str (first %) (last %)) (partition (+ 1 max-x) area-with-letters)))))
-        output (map #(clojure.string/join %) (partition (+ 1 max-x) area-with-letters))]
+                               (seq (clojure.string/join (map #(str (first %) (last %)) (partition (+ 1 max-x) area-with-letters)))))]
+        ;output (map #(clojure.string/join %) (partition (+ 1 max-x) area-with-letters))]
     ;(write-area-to-file output "src/advent_of_code_2018/out.txt")))
     (filter (fn [[area _]] ((comp not contains?) (set infinite-areas) area)) (frequencies area-with-letters))))
 
