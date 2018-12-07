@@ -175,7 +175,7 @@ bbb.ffffFf")
 (map #(seq %) (largest-finite-area input-small names-small))
 
 ;4341 + 1 for the capital letter ;), have to bring the kids to school
-(last (sort-by last (largest-finite-area input names)))
+(count (sort-by last (largest-finite-area input names)))
 
 (defn total-distance-to-all-locations
   [locations
@@ -209,27 +209,24 @@ bbb.ffffFf")
 (closest-location-with-coordinates weave-input-small safe-areas-small [8 6])
 
 (defn safe-region-under-10K
-  [input
-   names
-   safe-areas]
+  [input]
   (let [max-y (last (sort (map (fn [[_ y]] y) input)))
         max-x (last (sort (map (fn [[x _]] x) input)))
         area (for [y (range 0 (+ 1 max-y))
                    x (range 0 (+ 1 max-x))]
-               [x y])
-        ;give a letter to each area
-        weave-input (zipmap (vec names) input)
-        ;extract only the coordinates of safe locations
-        safe-coordinates (filter (comp not nil?) (map (partial closest-location-with-coordinates weave-input safe-areas) area))
-        total-distances (map #((partial total-distance-to-all-locations input) (second %)) safe-coordinates)]
-    total-distances))
+               [x y])]
+    (map (partial total-distance-to-all-locations input) area)))
+
+;this is it 42966
+(count (filter #(> 10000 %) (safe-region-under-10K input)))
 
 ;safe areas
 (def safe-areas
   (set (map first [[\р 662] [\a 2303] [\т 2687] [\b 1118] [\у 522] [\ф 2879] [\e 1166] [\ч 1061] [\g 3433] [\i 2194] [\j 1043] [\l 1335] [\б 1915] [\q 4342] [\г 867] [\е 1710] [\з 1277] [\w 725] [\и 1077] [\x 1305] [\й 1945] [\y 1051] [\z 1309] [\н 1130] [\о 1750] [\п 1326]])))
 
-(def safe-areas-small
-  (set [\d \e]))
+(count (filter #(< 1 (second %)) [[\р 661] ["T" 1] ["K" 1] [\a 2302] ["Т" 1] ["У" 1] ["П" 1] [\т 2686] [\b 1117] ["Г" 1] [\у 521] [\ф 2878] ["Х" 1] [\e 1165] ["Q" 1] ["О" 1] [\ч 1060] [\g 3432] ["L" 1] [\i 2193] ["G" 1] [\j 1042] ["J" 1] ["M" 1] ["М" 1] [\l 1334] ["S" 1] ["Y" 1] ["Е" 1] ["Z" 1] ["H" 1] ["Ф" 1] ["E" 1] ["R" 1] ["C" 1] ["F" 1] [\б 1914] [\q 4341] ["B" 1] ["К" 1] ["Ч" 1] ["З" 1] ["Н" 1] [\г 866] ["В" 1] ["Л" 1] ["P" 1] ["Б" 1] ["Й" 1] ["V" 1] ["U" 1] [\е 1709] ["И" 1] [\з 1276] [\w 724] ["Ж" 1] ["X" 1] [\и 1076] [\x 1304] ["N" 1] ["Д" 1] ["A" 1] [\й 1944] [\y 1050] [\z 1308] ["Ц" 1] ["I" 1] ["С" 1] ["А" 1] ["W" 1] [\н 1129] ["Р" 1] ["D" 1] [\о 1749] [\п 1325]]))
+
+(set/join (set [1 2 3]) (set [1 2 3]))
 
 ;33639 isn't the right answer
 (count (filter (partial > 31) (safe-region-under-10K input-small names-small safe-areas-small)))
