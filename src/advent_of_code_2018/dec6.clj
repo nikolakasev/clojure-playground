@@ -1,5 +1,6 @@
 (ns advent-of-code-2018.dec6
-  (:require [clojure.math.numeric-tower :as math]))
+  (:require [clojure.math.numeric-tower :as math])
+  (:require [clojure.string :as str]))
 
 (def grid "aaaaa.cccc
 aAaaa.cccc
@@ -13,12 +14,12 @@ bbb.eeffff
 bbb.ffffFf")
 
 (def grid-lines
-  (clojure.string/split-lines (clojure.string/lower-case grid)))
+  (str/split-lines (str/lower-case grid)))
 
 (defn vertical-border
   [grid-lines]
   ;take the first and last character for each line, this makes the left and right borders
-  (clojure.string/join (map #(str (first (vec %)) (last (vec %))) grid-lines)))
+  (str/join (map #(str (first (vec %)) (last (vec %))) grid-lines)))
 
 (vertical-border grid-lines)
 
@@ -30,7 +31,7 @@ bbb.ffffFf")
 ((comp not contains?) (infinite-locations grid-lines) \a)
 
 ;finite areas with their sizes
-(filter (fn [[area _]] ((comp not contains?) (infinite-locations grid-lines) area)) (frequencies (clojure.string/join grid-lines)))
+(filter (fn [[area _]] ((comp not contains?) (infinite-locations grid-lines) area)) (frequencies (str/join grid-lines)))
 
 ;this can wait
 (sort (fn [[_ int]] int) ([\d 9] [\e 17]))
@@ -54,7 +55,7 @@ bbb.ffffFf")
    (map
     ;reg ex each line
     (partial re-matches #"(\d*),\s(\d*)")
-    (clojure.string/split-lines input))))
+    (str/split-lines input))))
 
 (def input
   (input-to-coordinates (slurp "src/advent_of_code_2018/input-dec6.txt")))
@@ -99,7 +100,7 @@ bbb.ffffFf")
   [locations] ;[["a" 3] ["b" 1] ["c" 2]] returns b
   (let [distances (sort-by last locations)]
     (if (= 0 (last (first distances)))
-      (clojure.string/upper-case (first (first distances)))
+      (str/upper-case (first (first distances)))
       (closest-location distances))))
 
 (defn closest-location-from
@@ -133,7 +134,7 @@ bbb.ffffFf")
 {\р [127 346], \с [213 102], \a [156 193], \т [313 319], \b [81 315], \у [207 134], \c [50 197], \ф [154 253], \d [84 234], \х [50 313], \e [124 162], \ц [160 330], \f [339 345], \ч [332 163], \g [259 146], \h [240 350], \i [97 310], \j [202 119], \k [188 331], \l [199 211], \m [117 348], \n [350 169], \o [131 355], \а [89 332], \p [71 107], \б [254 181], \q [214 232], \в [113 117], \r [312 282], \г [120 161], \s [131 108], \д [322 43], \t [224 103], \е [115 226], \u [83 122], \ж [324 222], \v [352 142], \з [151 240], \w [208 203], \и [248 184], \x [319 217], \й [207 136], \y [224 207], \к [41 169], \z [327 174], \л [63 78], \м [286 43], \н [84 222], \о [81 167], \п [128 192]}
 
 (def output
-  (map #(clojure.string/join %) (partition 9 (map (partial closest-location-from weave-input-small) area))))
+  (map #(str/join %) (partition 9 (map (partial closest-location-from weave-input-small) area))))
 
 (with-open [w (clojure.java.io/writer "src/advent_of_code_2018/out.txt")]
   (doseq [line output]
@@ -141,7 +142,7 @@ bbb.ffffFf")
     (.newLine w)))
 
 ;left and right vertical borders
-;(seq (clojure.string/join (map #(str (first %) (last %)) (partition 9 aha))))
+;(seq (str/join (map #(str (first %) (last %)) (partition 9 aha))))
 
 (defn write-area-to-file
   [area
@@ -165,12 +166,41 @@ bbb.ffffFf")
         area-with-letters (map (partial closest-location-from weave-input) area)
         infinite-areas (concat (take max-x area-with-letters)
                                (take max-x (reverse area-with-letters))
-                               (seq (clojure.string/join (map #(str (first %) (last %)) (partition (+ 1 max-x) area-with-letters)))))]
-        ;output (map #(clojure.string/join %) (partition (+ 1 max-x) area-with-letters))]
-    ;(write-area-to-file output "src/advent_of_code_2018/out.txt")))
+                               (seq (str/join (map #(str (first %) (last %)) (partition (+ 1 max-x) area-with-letters)))))
+        output (map #(str/join %) (partition (+ 1 max-x) area-with-letters))]
+    (write-area-to-file output "src/advent_of_code_2018/out.txt")
     (filter (fn [[area _]] ((comp not contains?) (set infinite-areas) area)) (frequencies area-with-letters))))
 
 (map #(seq %) (largest-finite-area input-small names-small))
 
 ;4341 + 1 for the capital letter ;), have to bring the kids to school
 (last (sort-by last (largest-finite-area input names)))
+
+(defn total-distance-to-all-locations
+  [locations
+   [x y]]
+  (apply + (map (fn [location] ((partial manhattan-distance x y) (first location) (second location))) locations)))
+
+(total-distance-to-all-locations input-small [4 2])
+
+(defn safe-region-under-10K
+  [input
+   names]
+  (let [max-y (last (sort (map (fn [[_ y]] y) input)))
+        max-x (last (sort (map (fn [[x _]] x) input)))
+        area (for [y (range 0 (+ 1 max-y))
+                   x (range 0 (+ 1 max-x))]
+               [x y])
+        ;give a letter to each area
+        weave-input (zipmap (vec names) input)
+        ;calculate a letter for the closest area in each square - generates the view with letters
+        area-with-letters (map (partial closest-location-from weave-input) area)
+        infinite-areas (concat (take max-x area-with-letters)
+                               (take max-x (reverse area-with-letters))
+                               (seq (str/join (map #(str (first %) (last %)) (partition (+ 1 max-x) area-with-letters)))))]
+    (filter (fn [[area _]] ((comp not contains?) (set infinite-areas) area)) (frequencies area-with-letters))))
+
+(last (sort-by last (safe-region-under-10K input names)))
+
+;safe areas
+([\р 662] [\a 2303] [\т 2687] [\b 1118] [\у 522] [\ф 2879] [\e 1166] [\ч 1061] [\g 3433] [\i 2194] [\j 1043] [\l 1335] [\б 1915] [\q 4342] [\г 867] [\е 1710] [\з 1277] [\w 725] [\и 1077] [\x 1305] [\й 1945] [\y 1051] [\z 1309] [\н 1130] [\о 1750] [\п 1326])
