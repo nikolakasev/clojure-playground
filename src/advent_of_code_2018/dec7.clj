@@ -1,5 +1,4 @@
 (ns advent-of-code-2018.dec7
-  (:require [clojure.math.numeric-tower :as math])
   (:require [clojure.string :as str])
   (:require [clojure.set :as set]))
 
@@ -30,8 +29,6 @@ Step F must be finished before step E can begin.")))))))
 (re-matches regex "Step C must be finished before step A can begin.")
 (sort-by first (distinct (flatten  [["C" "A"] ["C" "F"]]))), "A" [["A" "B"] ["A" "D"]], "B" [["B" "E"]], "D" [["D" "E"]], "F" [["F" "E"]]
 
-(disj set ([\A \B \C]) \A)
-
 (:C "A" "F")
 
 (map second (name :A))
@@ -40,10 +37,13 @@ Step F must be finished before step E can begin.")))))))
   "Which step to take first?"
   [input]
   (let [steps (set (map first input))
-        dependencies (set (map keyword (distinct (mapcat second input))))]
-    (set/difference steps dependencies)))
+        dependencies (set (map keyword (distinct (mapcat second input))))
+        enabled (set/difference steps dependencies)]
+    (if (< 1 (count enabled))
+      (first (sort enabled))
+      (first enabled))))
 
-(first (enabled input-small))
+(keyword (enabled input-small))
 ;sort on keywords, nice!
 (sort (enabled input))
 
@@ -54,10 +54,17 @@ Step F must be finished before step E can begin.")))))))
 (defn execute-step
   [step
    remaining-steps]
-  ;implement this
-  (rest remaining-steps))
+  (filter #(not (= step (first %))) remaining-steps))
 
-(set [])
+(enabled (execute-step #{:F} (enabled (execute-step :D (execute-step :B (execute-step :A (execute-step :C input-small)))))))
+
+(str (name (first (first input-small))) (str/join (second (first input-small))))
+
+(str/join (second (first input-small)))
+
+(empty? #{:A})
+
+(< 1 (count #{:D :C :B}))
 
 (defn plan
   [input]
@@ -65,8 +72,11 @@ Step F must be finished before step E can begin.")))))))
          so-far ""]
     (if (empty? remaining-steps)
       so-far
-      (let [enabled (first (enabled remaining-steps))
+      (let [enabled (enabled remaining-steps)
             remaining (execute-step enabled remaining-steps)]
-        (recur remaining (str so-far (name enabled)))))))
+        (if (empty? remaining)
+          (str so-far (name (first (first remaining-steps))) (str/join (second (first remaining-steps))))
+          (recur remaining (str so-far (name enabled))))))))
 
+;"IBJTUWGFKDNVEYAHOMPCQRLSZX"
 (= "CABDFE" (plan input-small))
