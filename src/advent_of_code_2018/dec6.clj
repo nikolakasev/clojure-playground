@@ -226,14 +226,6 @@ bbb.ffffFf")
 
 (count (filter #(< 1 (second %)) [[\р 661] ["T" 1] ["K" 1] [\a 2302] ["Т" 1] ["У" 1] ["П" 1] [\т 2686] [\b 1117] ["Г" 1] [\у 521] [\ф 2878] ["Х" 1] [\e 1165] ["Q" 1] ["О" 1] [\ч 1060] [\g 3432] ["L" 1] [\i 2193] ["G" 1] [\j 1042] ["J" 1] ["M" 1] ["М" 1] [\l 1334] ["S" 1] ["Y" 1] ["Е" 1] ["Z" 1] ["H" 1] ["Ф" 1] ["E" 1] ["R" 1] ["C" 1] ["F" 1] [\б 1914] [\q 4341] ["B" 1] ["К" 1] ["Ч" 1] ["З" 1] ["Н" 1] [\г 866] ["В" 1] ["Л" 1] ["P" 1] ["Б" 1] ["Й" 1] ["V" 1] ["U" 1] [\е 1709] ["И" 1] [\з 1276] [\w 724] ["Ж" 1] ["X" 1] [\и 1076] [\x 1304] ["N" 1] ["Д" 1] ["A" 1] [\й 1944] [\y 1050] [\z 1308] ["Ц" 1] ["I" 1] ["С" 1] ["А" 1] ["W" 1] [\н 1129] ["Р" 1] ["D" 1] [\о 1749] [\п 1325]]))
 
-(set/join (set [1 2 3]) (set [1 2 3]))
-
-;33639 isn't the right answer
-(count (filter (partial > 31) (safe-region-under-10K input-small names-small safe-areas-small)))
-(count (filter (partial > 9999) (safe-region-under-10K input names safe-areas)))
-
-(count (safe-region-under-10K input-small names-small safe-areas-small))
-
 (closest-location-with-coordinates weave-input-small safe-areas-small [3 4])
 
 (total-distance-to-all-locations input-small [4 7])
