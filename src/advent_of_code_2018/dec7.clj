@@ -22,6 +22,11 @@ Step B must be finished before step E can begin.
 Step D must be finished before step E can begin.
 Step F must be finished before step E can begin.")))))))
 
+(def input
+  (map (fn [[step & dependencies]] [step dependencies])
+       (map (fn [step] (distinct (flatten (second step))))
+            (group-by first (map (fn [matches] [(keyword (second matches)) (last matches)]) (map (partial re-matches regex) (str/split-lines (slurp "src/advent_of_code_2018/input-dec7.txt"))))))))
+
 (re-matches regex "Step C must be finished before step A can begin.")
 (sort-by first (distinct (flatten  [["C" "A"] ["C" "F"]]))), "A" [["A" "B"] ["A" "D"]], "B" [["B" "E"]], "D" [["D" "E"]], "F" [["F" "E"]]
 
@@ -29,6 +34,39 @@ Step F must be finished before step E can begin.")))))))
 
 (:C "A" "F")
 
-(str :A)
+(map second (name :A))
 
-(map () [[:C ("A" "F")] [:A ("B" "D")] [:B ("E")] [:D ("E")] [:F ("E")]])
+(defn enabled
+  "Which step to take first?"
+  [input]
+  (let [steps (set (map first input))
+        dependencies (set (map keyword (distinct (mapcat second input))))]
+    (set/difference steps dependencies)))
+
+(first (enabled input-small))
+;sort on keywords, nice!
+(sort (enabled input))
+
+(set (map keyword (distinct (mapcat second [[:C ["A" "F"]] [:A ["B" "D"]] [:B ["E"]] [:D ["E"]] [:F ["E"]]]))))
+
+(set (map first [[:C ["A" "F"]] [:A ["B" "D"]] [:B ["E"]] [:D ["E"]] [:F ["E"]]]))
+
+(defn execute-step
+  [step
+   remaining-steps]
+  ;implement this
+  (rest remaining-steps))
+
+(set [])
+
+(defn plan
+  [input]
+  (loop [remaining-steps input
+         so-far ""]
+    (if (empty? remaining-steps)
+      so-far
+      (let [enabled (first (enabled remaining-steps))
+            remaining (execute-step enabled remaining-steps)]
+        (recur remaining (str so-far (name enabled)))))))
+
+(= "CABDFE" (plan input-small))
