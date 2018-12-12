@@ -114,6 +114,17 @@ Step F must be finished before step E can begin.")))))))
   (filter (fn [[_ time-busy]] (< 0 time-busy))
           (map (fn [[worker time-busy]] [worker (dec time-busy)]) busy-workers)))
 
+(defn get-step-dependencies
+  [input
+   step]
+  (map keyword (second (first (filter #(= step (first %)) input)))))
+
+(filter #(= :I (first %)) input)
+
+(get-step-dependencies input :I)
+
+(set (mapcat (partial get-step-dependencies input) [:A :C]))
+
 (defn schedule
   "Determines how long it takes to complete all `input` steps given a number of `workers`."
   [input
@@ -125,7 +136,7 @@ Step F must be finished before step E can begin.")))))))
       total-execution-time
       ;assign a new step only if there are workers available
       (let [busy-count (count busy-workers)
-            busy-worker-steps (set (map #(name (first %)) busy-workers))
+            busy-worker-steps (set (mapcat (partial get-step-dependencies input) (vec (map first busy-workers))))
             steps-to-execute (take (- workers busy-count) (multiple-enabled remaining-steps busy-worker-steps))
             new-workers (map (partial time-it-takes 0) steps-to-execute)
             remaining (execute-multiple-steps steps-to-execute remaining-steps)
@@ -136,14 +147,13 @@ Step F must be finished before step E can begin.")))))))
           (recur remaining (tick (concat latest-schedule [(time-it-takes last-to-finish (keyword (first (second (first remaining-steps)))))])) (inc total-execution-time))
           (recur remaining (tick latest-schedule) (inc total-execution-time)))))))
 
-;        (if (empty? remaining)
-          ;the step before the last, schedule the last as well
-;          (recur remaing (tick)))))))
-
-(schedule input-small 1)
+;1118
+(schedule input 5)
 
 (def busy-workers
   [[:C 3] [:D 14]])
+
+(vec (map first busy-workers))
 
 (tick (tick (tick (tick busy-workers))))
 
@@ -152,11 +162,3 @@ Step F must be finished before step E can begin.")))))))
 
 (= 15 (schedule input-small 2))
 (= 21 (schedule input-small 1))
-
-(execute-multiple-steps (multiple-enabled [[:D ["E"]]] #{}) [[:D ["E"]]])
-
-(keyword (first (second (first [[:D ["E"]]]))))
-
-(sort (set [:D :A :C]))
-
-(keyword (first (second (first [[:C ["A" "F"]]]))))
