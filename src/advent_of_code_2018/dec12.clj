@@ -27,13 +27,13 @@
 
 (re-find #"\.\.##\.\." input-small)
 
-(str/index-of "#..#" input-small 1)
+(str/index-of "#..#" input-small 0)
 
-(str/index-of input-small "..#.#..##")
+(str/index-of input-small "#..#.#..##" 0)
 
 (re-matches instruction-regex "...## => #")
 
-(let [m (re-matcher #"a" "bbbabbb")] (.find m) (.start m))
+(let [m (re-matcher #"f" "bbbabbb")] (.find m))
 
 (let [m (re-matcher #"#." input-small)] (.find m 6) (.start m))
 
@@ -70,6 +70,20 @@
    instructions
    number-of-generations-wanted]
   [0 0])
+
+(defn apply-instruction
+  [generation
+   begins-at-pot
+   instruction]
+  (let [gen-string (generation-to-string generation begins-at-pot)]
+    (loop [index 0
+           so-far #{}]
+      (let [found (str/index-of gen-string instruction index)]
+        (if (not (nil? found))
+          (recur (inc found) (into so-far [(+ begins-at-pot (+ found 2))]))
+          so-far)))))
+
+(apply-instruction (string-to-generation input-small 0) 0 "#..#")
 
 ;algo should work on the example
 (= 325 (apply + (generations (string-to-generation "#..#.#..##......###...###." 0) instructions 20)))
