@@ -114,3 +114,13 @@
 
 ;algo should work on the example
 (= 325 (apply + (generations (string-to-generation "#..#.#..##......###...###." 0) instructions #{} 20)))
+
+(def initial-state "###....#..#..#......####.#..##..#..###......##.##..#...#.##.###.##.###.....#.###..#.#.##.#..#.#")
+
+(def lines (drop 2 (str/split-lines (slurp "src/advent_of_code_2018/input-dec12.txt"))))
+
+(def plant (map second (filter #(= "#" (last %)) (map (partial re-matches instruction-regex) lines))))
+(def empty-pot (map second (filter #(= "." (last %)) (map (partial re-matches instruction-regex) lines))))
+
+;2040
+(apply + (generations (string-to-generation initial-state 0) plant empty-pot 20))
