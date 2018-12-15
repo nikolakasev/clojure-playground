@@ -123,4 +123,12 @@
 (def empty-pot (map second (filter #(= "." (last %)) (map (partial re-matches instruction-regex) lines))))
 
 ;2040
-(apply + (generations (string-to-generation initial-state 0) plant empty-pot 20))
+(time (apply + (generations (string-to-generation initial-state 0) plant empty-pot 20)))
+
+;1700000000011
+;formula: (50,000,000,000 - 1,000) * 34 + 34011
+(time (apply + (generations (string-to-generation initial-state 0) plant empty-pot 1000)))
+
+;20K generations take 36 seconds, 50 billion would take 2.85 years?!
+;(time (apply + (generations (string-to-generation initial-state 0) plant empty-pot 20000)))
+;(apply + (generations (string-to-generation initial-state 0) plant empty-pot 50000000000))
