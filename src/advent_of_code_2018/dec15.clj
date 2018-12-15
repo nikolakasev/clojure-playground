@@ -29,6 +29,8 @@
 (io/view board)
 (io/view board-wdg)
 
+(io/view (g/weighted-digraph {:0-0 {}}))
+
 (g/successors board-wdg :2-2)
 
 (a/dijkstra-path board-wdg :3-1 :1-3)
@@ -40,6 +42,54 @@
   (not (= neighbor :4-1)))
 
 (a/bf-traverse board-wdg :5-3 :when not-an-elf)
+
+(def input "#######
+#.G...#
+#...EG#
+#.#.#G#
+#..G#E#
+#.....#
+#######")
+
+(def lines (map vec (str/split-lines input)))
+
+(nth (nth lines 3) 1)
+
+(let [lines (map vec (str/split-lines input))
+      max-x (count (first lines))
+      max-y (count lines)
+      ;don't bother with the outside walls
+      nodes (for [y (range 1 (- max-y 1))
+                  x (range 1 (- max-x 1))]
+              (if (not (= \# (nth (nth lines y) x)))
+                {(keyword (str x "-" y)) {}}))]
+  (filter (comp not nil?) nodes))
+
+(defn neighbours
+  "Returns a set of neighbouring locations and their corresponding weights."
+  [lines
+   [x y]]
+  (let [character (nth (nth lines y) x)]
+    (if (= \# character)
+      nil
+      (if (not (= \. character))
+        {(keyword (str character)) 300 :location [x y]}
+        (let [top [(nth (nth lines (- y 1)) x) (keyword (str x "-" (- y 1))) 1]
+              bottom [(nth (nth lines (+ y 1)) x) (keyword (str x "-" (+ y 1))) 4]
+              left [(nth (nth lines y) (- x 1)) (keyword (str (- x 1) "-" y)) 2]
+              right [(nth (nth lines y) (+ x 1)) (keyword (str (+ x 1) "-" y)) 3]]
+          (filter #(not (= \# (first %))) [top bottom left right]))))))
+
+(neighbours lines [1 4])
+
+(set [nil 1 nil nil])
+
+(let [x 1]
+  (str (+ x 1) "-" x))
+
+(= \# \.)
+
+(keyword (str \G))
 
 (defn battle
   [input]
