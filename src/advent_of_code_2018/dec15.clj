@@ -29,7 +29,7 @@
 (io/view board)
 (io/view board-wdg)
 
-(io/view (g/weighted-digraph {:0-0 {}}))
+(io/view (g/weighted-digraph {:0-0 {:1-2 3, :1-3 4}}))
 
 (g/successors board-wdg :2-2)
 
@@ -55,16 +55,6 @@
 
 (nth (nth lines 3) 1)
 
-(let [lines (map vec (str/split-lines input))
-      max-x (count (first lines))
-      max-y (count lines)
-      ;don't bother with the outside walls
-      nodes (for [y (range 1 (- max-y 1))
-                  x (range 1 (- max-x 1))]
-              (if (not (= \# (nth (nth lines y) x)))
-                {(keyword (str x "-" y)) {}}))]
-  (filter (comp not nil?) nodes))
-
 (defn neighbours
   "Returns a set of neighbouring locations and their corresponding weights."
   [lines
@@ -72,17 +62,29 @@
   (let [character (nth (nth lines y) x)]
     (if (= \# character)
       nil
-      (if (not (= \. character))
-        {(keyword (str character)) 300 :location [x y]}
-        (let [top [(nth (nth lines (- y 1)) x) (keyword (str x "-" (- y 1))) 1]
-              bottom [(nth (nth lines (+ y 1)) x) (keyword (str x "-" (+ y 1))) 4]
-              left [(nth (nth lines y) (- x 1)) (keyword (str (- x 1) "-" y)) 2]
-              right [(nth (nth lines y) (+ x 1)) (keyword (str (+ x 1) "-" y)) 3]]
-          (filter #(not (= \# (first %))) [top bottom left right]))))))
+      (let [top [(nth (nth lines (- y 1)) x) (keyword (str x "-" (- y 1))) 1]
+            bottom [(nth (nth lines (+ y 1)) x) (keyword (str x "-" (+ y 1))) 4]
+            left [(nth (nth lines y) (- x 1)) (keyword (str (- x 1) "-" y)) 2]
+            right [(nth (nth lines y) (+ x 1)) (keyword (str (+ x 1) "-" y)) 3]]
+        (apply array-map (mapcat (fn [[_ location weight]] [location weight]) (filter #(not (= \# (first %))) [top bottom left right])))))))
+
+(defn input-to-board
+  [input]
+  (let [lines (map vec (str/split-lines input))
+        max-x (count (first lines))
+        max-y (count lines)]
+    ;don't bother with the outside walls
+    (for [y (range 1 (- max-y 1))
+          x (range 1 (- max-x 1))]
+      (if (not (= \# (nth (nth lines y) x)))
+        [(keyword (str x "-" y)) (neighbours lines [x y])]))))
 
 (neighbours lines [1 4])
 
-(set [nil 1 nil nil])
+(concat [{:1 2}] [{:3 4}])
+
+;builds the graph
+(io/view (g/weighted-digraph (apply hash-map (mapcat identity (input-to-board input)))))
 
 (let [x 1]
   (str (+ x 1) "-" x))
