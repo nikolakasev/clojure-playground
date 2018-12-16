@@ -3,8 +3,7 @@
   (:require [loom.graph :as g])
   (:require [loom.io :as io])
   (:require [loom.alg :as a])
-  (:require [clojure.set :as set])
-  (:require [clojure.pprint :as prn]))
+  (:require [clojure.set :as set]))
 
 (defmacro dlet
   "let with inspected bindings"
@@ -83,7 +82,7 @@
                      {:type (str character) :location [x y] :hp initial-health})))]
     (filter (comp not nil?) actors)))
 
-(def actors (input-to-actors input 300))
+(def actors (input-to-actors input 200))
 
 (:E (first actors))
 
@@ -138,7 +137,7 @@
 (update (first actors) :hp (fn [a] (+ 10 a)))
 
 (defn attack-actor
-  "Applies atack function `f` on an actor which is located on `location`."
+  "Applies attack function `f` on an actor which is located on `location`."
   [location
    all-actors
    f]
@@ -172,12 +171,13 @@
   [actor
    all-actors
    board]
-  (let [adjacent-locations (set (g/successors board (location-to-node (:location actor))))
-        enemy-locations (set (map (comp location-to-node :location) (enemies-of actor all-actors)))
-        adjacent-enemies (mapcat (fn [node] (filter #(= (node-to-location node) (:location %)) all-actors)) (set/intersection adjacent-locations enemy-locations))]
-    adjacent-enemies))
+  (let [adjacent-nodes (set (g/successors board (location-to-node (:location actor))))
+        enemy-nodes (set (map (comp location-to-node :location) (enemies-of actor all-actors)))]
+    ;a list of enemy actors
+    (mapcat (fn [node] (filter #(= (node-to-location node) (:location %)) all-actors))
+            (set/intersection adjacent-nodes enemy-nodes))))
 
-(adjacent-enemies (first actors) actors b)
+(adjacent-enemies (second actors) actors b)
 
 (defn not-an-ally
   [allies neighbor predecessor depth]
@@ -215,13 +215,13 @@
             (if (not (empty? adjacent-enemies))
               ;attack! the enemy with the lowest health and clean up the mess
               (recur round
-                     (remove-dead-actors (attack-actor (first (sort-by :hp adjacent-enemies)) all-actors attack-function))
+                     (remove-dead-actors (attack-actor (:location (first (sort-by :hp adjacent-enemies))) all-actors attack-function))
                      (rest actors-left))
               (if (not (empty? reachable-enemies))
                 ;move if there are reachable enemies
                 (let [in-range (set/difference (set (mapcat #(g/successors board %) reachable-enemies))
                                                (set (map (comp location-to-node :location) actors)))
-                      target (locations-by-reading-order (map node-to-location in-range))
+                      target (first (locations-by-reading-order (map node-to-location in-range)))
                       path-to-target (a/dijkstra-path board (location-to-node (:location actor)) (location-to-node target))
                       move-to (node-to-location (second path-to-target))]
                   (recur round
@@ -234,10 +234,10 @@
         ;battle ends
         (* (dec round) (total-health all-actors))))))
 
-; (= 27730 (battle "#######
-; #.G...#
-; #...EG#
-; #.#.#G#
-; #..G#E#
-; #.....#
-; #######"))
+(= 27730 (battle "#######
+#.G...#
+#...EG#
+#.#.#G#
+#..G#E#
+#.....#
+#######"))
