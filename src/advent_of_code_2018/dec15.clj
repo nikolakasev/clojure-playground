@@ -2,7 +2,8 @@
   (:require [clojure.string :as str])
   (:require [loom.graph :as g])
   (:require [loom.io :as io])
-  (:require [loom.alg :as a]))
+  (:require [loom.alg :as a])
+  (:require [clojure.set :as set]))
 
 (def g (g/graph [1 2] [2 3] {3 [4] 5 [6 7]} 7 8 9))
 
@@ -70,6 +71,18 @@
 
 (neighbours lines [1 4])
 
+;TODO solve reflection warning?
+(defn node-to-location
+  [node]
+  (let [s (name node)]
+    [(Character/digit (first s) 10) (Character/digit (last s) 10)]))
+
+(node-to-location :1-2)
+
+(defn location-to-node
+  [[x y]]
+  (keyword (str x "-" y)))
+
 (defn input-to-board
   [input]
   (let [lines (map vec (str/split-lines input))
@@ -79,7 +92,7 @@
     (for [y (range 1 (- max-y 1))
           x (range 1 (- max-x 1))]
       (if (not (= \# (nth (nth lines y) x)))
-        [(keyword (str x "-" y)) (neighbours lines [x y])]))))
+        [(location-to-node [x y]) (neighbours lines [x y])]))))
 
 (defn input-to-actors
   [input
@@ -105,6 +118,7 @@
 (def b (g/weighted-digraph (apply hash-map (mapcat identity (input-to-board input)))))
 
 (count (g/nodes b))
+(io/view b)
 
 (let [x 1]
   (str (+ x 1) "-" x))
@@ -131,55 +145,89 @@
 
 (group-by first actors)
 
-(defn battle
-  [input]
-  (let [board (g/weighted-digraph (apply hash-map (mapcat identity (input-to-board input))))
-        actors (sort-by-reading-order (input-to-actors input))]
-    (loop [round 0
-           ;changes only when an actor dies
-           all-actors actors
-           ;for each actor apply it's logic
-           actors-left actors]
-      (if (enemies-left all-actors)
-        ;continue round
-        (let [actor (first actors-left)
-              adjacent-enemies []
-              enemy-coordinates []
-              enemies-in-range []]
-          (if (not (empty? adjacent-enemies))))
-            ;attack the enemy with the lowest health
-            ;move
-
-        ;battle ends
-        (* (dec round) (total-health all-actors))))))
-
 (defn move-actor
-  "Moves an actor from one coordinate to another."
-  [[x y]
-   [new-x new-y]
-   all-actors])
+  "Moves an actor from a `location` to `new-location`."
+  [location
+   new-location
+   all-actors]
+  (map #(if (= location (:location %)) (update % :location (fn [loc] new-location)) %) all-actors))
 
-(move-actor)
+(move-actor [3 4] [10 10] actors)
+
+(identity [1 2])
+
+(update (first actors) :hp (fn [a] (+ 10 a)))
 
 (defn attack-actor
+  "Applies atack function `f` on an actor which is located on `location`."
   [location
    all-actors
    f]
+  ;"select for update" pattern on a list of maps
   (map #(if (= location (:location %)) (update % :hp f) %) all-actors))
 
 (= [1 2] [1 4])
 
 (:location (first actors))
 
-(attack-actor [3 4] actors (fn [hp] (- hp 3)))
-
-({:type "G", :location [2 1], :hp 300} {:type "E", :location [4 2], :hp 300} {:type "G", :location [5 2], :hp 300} {:type "G", :location [5 3], :hp 300} {:type "G", :location [3 4], :hp 300} {:type "E", :location [5 4], :hp 300})
+(sort-by :hp (attack-actor [3 4] actors #(- % 3)))
 
 (defn remove-dead-actors
   [actors]
   (filter #(> (:hp %) 0) actors))
 
 (not (empty? [1 2]))
+
+(defn actor-enemies
+  [actor
+   all-actors]
+  (filter #(not (= (:type actor) (:type %))) all-actors))
+
+(defn adjacent-enemies
+  [actor
+   all-actors
+   board]
+  (let [adjacent-locations (set (g/successors board (location-to-node (:location actor))))
+        enemy-locations (set (map location-to-node (map :location (actor-enemies actor all-actors))))
+        adjacent-enemies (map (fn [node] (filter #(= (node-to-location node) (:location %)) all-actors)) (set/intersection adjacent-locations enemy-locations))]
+    adjacent-enemies))
+
+(adjacent-enemies (nth actors 2) actors b)
+
+(set/intersection #{1 2 3} #{3 4 5})
+
+(actor-enemies (first actors) actors)
+
+(defn battle
+  [input]
+  (let [board (g/weighted-digraph (apply hash-map (mapcat identity (input-to-board input))))
+        actors (sort-by-reading-order (input-to-actors input 300))
+        attack-function #(- % 3)]
+    (loop [round 0
+           ;changes only when an actor dies
+           all-actors actors
+           ;for each actor apply it's logic
+           actors-left actors]
+      (if (enemies-left all-actors)
+        (if (empty? actors-left)
+          ;round ends
+          (recur (inc round)
+                 all-actors
+                 all-actors)
+          ;round continues
+          (let [actor (first actors-left)
+                adjacent-enemies (adjacent-enemies actor all-actors board)
+                enemy-coordinates []
+                enemies-in-range []]
+            (if (not (empty? adjacent-enemies))
+              ;attack! the enemy with the lowest health and clean up the mess
+              (recur round
+                     (remove-dead-actors (attack-actor (first (sort-by :hp adjacent-enemies)) all-actors attack-function))
+                     (rest actors-left)))))
+              ;move
+
+        ;battle ends
+        (* (dec round) (total-health all-actors))))))
 
 (= 27730 (battle "#######
 #.G...#
