@@ -68,6 +68,8 @@
             right [(nth (nth lines y) (+ x 1)) (keyword (str (+ x 1) "-" y)) 3]]
         (apply array-map (mapcat (fn [[_ location weight]] [location weight]) (filter #(not (= \# (first %))) [top bottom left right])))))))
 
+(neighbours lines [1 4])
+
 (defn input-to-board
   [input]
   (let [lines (map vec (str/split-lines input))
@@ -79,12 +81,28 @@
       (if (not (= \# (nth (nth lines y) x)))
         [(keyword (str x "-" y)) (neighbours lines [x y])]))))
 
-(neighbours lines [1 4])
+(defn input-to-actors
+  [input
+   initial-health]
+  (let [lines (map vec (str/split-lines input))
+        max-x (count (first lines))
+        max-y (count lines)
+        ;don't bother with the outside walls
+        actors (for [y (range 1 (- max-y 1))
+                     x (range 1 (- max-x 1))]
+                 (let [character (nth (nth lines y) x)]
+                   (if (and (not (= \# character)) (not (= \. character)))
+                     [(keyword (str character)) [x y] initial-health])))]
+    (filter (comp not nil?) actors)))
+
+(def actors (input-to-actors input 300))
 
 (concat [{:1 2}] [{:3 4}])
 
 ;builds the graph
-(io/view (g/weighted-digraph (apply hash-map (mapcat identity (input-to-board input)))))
+(def b (g/weighted-digraph (apply hash-map (mapcat identity (input-to-board input)))))
+
+(count (g/nodes b))
 
 (let [x 1]
   (str (+ x 1) "-" x))
