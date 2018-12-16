@@ -16,45 +16,6 @@
                    (partition 2 bindings))]
      ~@body))
 
-(def g (g/graph [1 2] [2 3] {3 [4] 5 [6 7]} 7 8 9))
-
-(def g2 (g/graph [1 2] [2 3] [3 4] [1 4]))
-
-(io/view g2)
-
-(g/successors g 6)
-
-(a/bf-path g 1 3)
-
-(io/view (g/add-nodes g "foobar" {:name "baz"} [1 2 3]))
-
-(def wg (g/weighted-graph {:a {:b 10 :c 20} :c {:d 30} :e {:b 5 :d 5}}))
-
-(io/view wg)
-
-(a/bf-path wg :e :a)
-
-(def board (g/weighted-graph {:1-1 {:2-1 3 :1-2 4} :2-1 {:1-1 2 :3-1 3 :2-2 4} :3-1 {:2-1 2 :4-1 3 :3-2 4} :4-1 {:3-1 2 :5-1 3} :5-1 {:4-1 2 :5-2 4} :5-2 {:5-1 1 :5-3 4} :5-3 {:5-2 1} :1-2 {:2-2 3 :1-3 4} :2-2 {:2-1 1 :1-2 2 :3-2 3 :2-3 4} :3-2 {:3-1 1 :2-2 2 :3-3 4} :1-3 {:1-2 1 :2-3 3} :2-3 {:2-2 1 :1-3 2 :3-3 3} :3-3 {:3-2 1 :2-3 2}}))
-
-(def board-wdg (g/weighted-digraph {:1-1 {:2-1 3 :1-2 4} :2-1 {:1-1 2 :3-1 3 :2-2 4} :3-1 {:2-1 2 :4-1 3 :3-2 4} :4-1 {:3-1 2 :5-1 3} :5-1 {:4-1 2 :5-2 4} :5-2 {:5-1 1 :5-3 4} :5-3 {:5-2 1} :1-2 {:2-2 3 :1-3 4} :2-2 {:2-1 1 :1-2 2 :3-2 3 :2-3 4} :3-2 {:3-1 1 :2-2 2 :3-3 4} :1-3 {:1-2 1 :2-3 3} :2-3 {:2-2 1 :1-3 2 :3-3 3} :3-3 {:3-2 1 :2-3 2}}))
-
-(io/view board)
-(io/view board-wdg)
-
-(io/view (g/weighted-digraph {:0-0 {:1-2 3, :1-3 4}}))
-
-(g/successors board-wdg :2-2)
-
-(a/dijkstra-path board-wdg :3-1 :1-3)
-
-(a/bf-traverse board-wdg :5-3)
-
-(defn not-an-elf
-  [neighbor predecessor depth]
-  (not (= neighbor :4-1)))
-
-(a/bf-traverse board-wdg :5-3 :when not-an-elf)
-
 (def input "#######
 #.G...#
 #...EG#
@@ -82,13 +43,16 @@
 
 (neighbours lines [1 4])
 
-;TODO solve reflection warning?
 (defn node-to-location
   [node]
-  (let [s (name node)]
-    [(Character/digit (first s) 10) (Character/digit (last s) 10)]))
+  (let [s (name node)
+        regex #"(\d*)-(\d*)"
+        matches (re-matches regex s)]
+    [(read-string (second matches)) (read-string (last matches))]))
 
 (node-to-location :1-2)
+
+(name :1-2)
 
 (defn location-to-node
   [[x y]]
@@ -127,9 +91,6 @@
 
 ;builds the graph
 (def b (g/weighted-digraph (apply hash-map (mapcat identity (input-to-board input)))))
-
-(count (g/nodes b))
-(io/view b)
 
 (let [x 1]
   (str (+ x 1) "-" x))
@@ -216,18 +177,20 @@
         adjacent-enemies (mapcat (fn [node] (filter #(= (node-to-location node) (:location %)) all-actors)) (set/intersection adjacent-locations enemy-locations))]
     adjacent-enemies))
 
-(adjacent-enemies (second actors) actors b)
-
-(prn/pprint (set/intersection #{1 2 3} #{3 4 5}))
+(adjacent-enemies (first actors) actors b)
 
 (defn not-an-ally
   [allies neighbor predecessor depth]
   (not (contains? allies neighbor)))
 
+(node-to-location :1-2)
+
+(def board (g/weighted-digraph (apply hash-map (mapcat identity (input-to-board input)))))
+
 (defn battle
   [input]
   (let [board (g/weighted-digraph (apply hash-map (mapcat identity (input-to-board input))))
-        actors (actors-by-reading-order (input-to-actors input 300))
+        actors (actors-by-reading-order (input-to-actors input 200))
         attack-function #(- % 3)]
     (loop [round 0
            ;changes only when an actor dies
@@ -247,7 +210,7 @@
                 ;TODO refactor next two and "inject" enemies-of or allies-of?
                 enemy-nodes (set (map (comp location-to-node :location) (enemies-of actor all-actors)))
                 allied-nodes (set (map (comp location-to-node :location) (allies-of actor all-actors)))
-                reachable-enemies (set/intersection (set (a/bf-traverse board (:location actor) :when (partial not-an-ally allied-nodes)))
+                reachable-enemies (set/intersection (set (a/bf-traverse board (location-to-node (:location actor)) :when (partial not-an-ally allied-nodes)))
                                                     enemy-nodes)]
             (if (not (empty? adjacent-enemies))
               ;attack! the enemy with the lowest health and clean up the mess
@@ -258,7 +221,9 @@
                 ;move if there are reachable enemies
                 (let [in-range (set/difference (set (mapcat #(g/successors board %) reachable-enemies))
                                                (set (map (comp location-to-node :location) actors)))
-                      move-to (first (locations-by-reading-order in-range))]
+                      target (locations-by-reading-order (map node-to-location in-range))
+                      path-to-target (a/dijkstra-path board (location-to-node (:location actor)) (location-to-node target))
+                      move-to (node-to-location (second path-to-target))]
                   (recur round
                          (move-actor (:location actor) move-to all-actors)
                          (rest actors-left)))
@@ -269,52 +234,10 @@
         ;battle ends
         (* (dec round) (total-health all-actors))))))
 
-(= 27730 (battle "#######
-#.G...#
-#...EG#
-#.#.#G#
-#..G#E#
-#.....#
-#######"))
-
-(= 36334 (battle "#######
-#G..#E#
-#E#E.E#
-#G.##.#
-#...#E#
-#...E.#
-#######"))
-
-(= 39514 (battle "#######
-#E..EG#
-#.#G.E#
-#E.##E#
-#G..#.#
-#..E#.#
-#######"))
-
-(= 27755 (battle "#######
-#E.G#.#
-#.#G..#
-#G.#.G#
-#G..#.#
-#...E.#
-#######"))
-
-(= 28944 (battle "#######
-#.E...#
-#.#..G#
-#.###.#
-#E#G#G#
-#...#G#
-#######"))
-
-(= 18740 (battle "#########
-#G......#
-#.E.#...#
-#..##..G#
-#...##..#
-#...#...#
-#.G...G.#
-#.....G.#
-#########"))
+; (= 27730 (battle "#######
+; #.G...#
+; #...EG#
+; #.#.#G#
+; #..G#E#
+; #.....#
+; #######"))
