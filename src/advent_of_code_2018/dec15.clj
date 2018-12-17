@@ -148,11 +148,19 @@
 
 (:location (first actors))
 
-(sort-by :hp (attack-actor [3 4] actors #(- % 3)))
+(sort-by :hp (attack-actor [3 2] actors #(- % 3)))
+
+(filter #(<= (:hp %) 0) (attack-actor [3 2] actors #(- % 3)))
+
+(def locs (set (map :location (take 2 actors))))
 
 (defn remove-dead-actors
-  [actors]
-  (filter #(> (:hp %) 0) actors))
+  [dead
+   actors]
+  (let [locations (set (map :location dead))]
+    (filter #(not (contains? locations (:location %))) actors)))
+
+(remove-dead-actors (take 2 actors) actors)
 
 (not (empty? [1 2]))
 
@@ -185,7 +193,29 @@
 
 (node-to-location :1-2)
 
+(def input "#######
+#...G.#
+#..G.G#
+#.#.#G#
+#...#E#
+#.....#
+#######")
+
 (def board (g/weighted-digraph (apply hash-map (mapcat identity (input-to-board input)))))
+
+(def all-actors (input-to-actors input 200))
+(def actor (first actors))
+
+(def enemy-nodes (set (map (comp location-to-node :location) (enemies-of actor all-actors))))
+(def allied-nodes (set (map (comp location-to-node :location) (allies-of actor all-actors))))
+(def reachable-enemies (set/intersection (set (a/bf-traverse board (location-to-node (:location actor)) :when (partial not-an-ally allied-nodes)))
+                                         enemy-nodes))
+
+(def in-range (set/difference (set (mapcat #(g/successors board %) reachable-enemies))
+                              (set (map (comp location-to-node :location) actors))))
+(def target (first (locations-by-reading-order (map node-to-location in-range))))
+(def path-to-target (a/dijkstra-path board (location-to-node (:location actor)) (location-to-node target)))
+(def path-bf (a/bf-path board (location-to-node (:location actor)) (location-to-node target) :when (partial not-an-ally allied-nodes)))
 
 (defn battle
   [input]
@@ -201,8 +231,8 @@
         (if (empty? actors-left)
           ;round ends
           (recur (inc round)
-                 all-actors
-                 all-actors)
+                 (actors-by-reading-order all-actors)
+                 (actors-by-reading-order all-actors))
           ;round continues
           (let [actor (first actors-left)
                 ;to be able to attack
@@ -214,15 +244,18 @@
                                                     enemy-nodes)]
             (if (not (empty? adjacent-enemies))
               ;attack! the enemy with the lowest health and clean up the mess
-              (recur round
-                     (remove-dead-actors (attack-actor (:location (first (sort-by :hp adjacent-enemies))) all-actors attack-function))
-                     (rest actors-left))
+              (let [enemy-to-attack (first (sort-by :hp adjacent-enemies))
+                    actors-after-attack (attack-actor (:location enemy-to-attack) all-actors attack-function)
+                    dead-actors (filter #(<= (:hp %) 0) actors-after-attack)]
+                (recur round
+                       (remove-dead-actors dead-actors actors-after-attack)
+                       (remove-dead-actors dead-actors (rest actors-left))))
               (if (not (empty? reachable-enemies))
                 ;move if there are reachable enemies
                 (let [in-range (set/difference (set (mapcat #(g/successors board %) reachable-enemies))
                                                (set (map (comp location-to-node :location) actors)))
                       target (first (locations-by-reading-order (map node-to-location in-range)))
-                      path-to-target (a/dijkstra-path board (location-to-node (:location actor)) (location-to-node target))
+                      path-to-target (a/bf-path board (location-to-node (:location actor)) (location-to-node target) :when (partial not-an-ally allied-nodes))
                       move-to (node-to-location (second path-to-target))]
                   (recur round
                          (move-actor (:location actor) move-to all-actors)
@@ -232,7 +265,7 @@
                        all-actors
                        (rest actors-left))))))
         ;battle ends
-        (* (dec round) (total-health all-actors))))))
+        all-actors))));(* (dec round) (total-health all-actors))))))
 
 (= 27730 (battle "#######
 #.G...#
