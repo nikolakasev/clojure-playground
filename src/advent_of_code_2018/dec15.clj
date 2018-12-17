@@ -194,17 +194,17 @@
 (node-to-location :1-2)
 
 (def input "#######
-#...G.#
-#..G.G#
+#.G...#
+#...EG#
 #.#.#G#
-#...#E#
+#..G#E#
 #.....#
 #######")
 
 (def board (g/weighted-digraph (apply hash-map (mapcat identity (input-to-board input)))))
 
 (def all-actors (input-to-actors input 200))
-(def actor (first actors))
+(def actor (first all-actors))
 
 (def enemy-nodes (set (map (comp location-to-node :location) (enemies-of actor all-actors))))
 (def allied-nodes (set (map (comp location-to-node :location) (allies-of actor all-actors))))
@@ -212,7 +212,7 @@
                                          enemy-nodes))
 
 (def in-range (set/difference (set (mapcat #(g/successors board %) reachable-enemies))
-                              (set (map (comp location-to-node :location) actors))))
+                              (set (map (comp location-to-node :location) all-actors))))
 (def target (first (locations-by-reading-order (map node-to-location in-range))))
 (def path-to-target (a/dijkstra-path board (location-to-node (:location actor)) (location-to-node target)))
 (def path-bf (a/bf-path board (location-to-node (:location actor)) (location-to-node target) :when (partial not-an-ally allied-nodes)))
@@ -253,7 +253,7 @@
               (if (not (empty? reachable-enemies))
                 ;move if there are reachable enemies
                 (let [in-range (set/difference (set (mapcat #(g/successors board %) reachable-enemies))
-                                               (set (map (comp location-to-node :location) actors)))
+                                               (set (map (comp location-to-node :location) all-actors)))
                       target (first (locations-by-reading-order (map node-to-location in-range)))
                       path-to-target (a/bf-path board (location-to-node (:location actor)) (location-to-node target) :when (partial not-an-ally allied-nodes))
                       move-to (node-to-location (second path-to-target))]
