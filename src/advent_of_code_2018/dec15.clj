@@ -247,9 +247,13 @@
               (let [enemy-to-attack (first (sort-by :hp adjacent-enemies))
                     actors-after-attack (attack-actor (:location enemy-to-attack) all-actors attack-function)
                     dead-actors (filter #(<= (:hp %) 0) actors-after-attack)]
-                (recur round
-                       (remove-dead-actors dead-actors actors-after-attack)
-                       (remove-dead-actors dead-actors (rest actors-left))))
+                (if (empty? dead-actors)
+                  (recur round
+                         actors-after-attack
+                         (rest actors-left))
+                  (recur round
+                         (remove-dead-actors dead-actors actors-after-attack)
+                         (remove-dead-actors dead-actors actors-left))))
               (if (not (empty? reachable-enemies))
                 ;move if there are reachable enemies
                 (let [in-range (set/difference (set (mapcat #(g/successors board %) reachable-enemies))
@@ -265,7 +269,7 @@
                        all-actors
                        (rest actors-left))))))
         ;battle ends
-        all-actors))));(* (dec round) (total-health all-actors))))))
+        (* round (total-health all-actors))))))
 
 (= 27730 (battle "#######
 #.G...#
@@ -274,3 +278,5 @@
 #..G#E#
 #.....#
 #######"))
+
+(= 1 1)
