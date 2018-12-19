@@ -34,9 +34,6 @@ bbb.ffffFf")
 ;finite areas with their sizes
 (filter (fn [[area _]] ((comp not contains?) (infinite-locations grid-lines) area)) (frequencies (str/join grid-lines)))
 
-;this can wait
-(sort (fn [[_ int]] int) ([\d 9] [\e 17]))
-
 (defn manhattan-distance
   "Calculates the Manhattan distance between two coordinates"
   [[from-x
