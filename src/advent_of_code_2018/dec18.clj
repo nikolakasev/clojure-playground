@@ -1,6 +1,5 @@
 (ns advent-of-code-2018.dec18
-  (:require [clojure.string :as str])
-  (:require [clojure.set :as set]))
+  (:require [clojure.string :as str]))
 
 (def input ".|||.#..|##.#||..#.|..|..||||..#|##.##..#...|.....
 .|#.|#..##...|#.........#.#..#..|#.|#|##..#.#|..#.
@@ -152,8 +151,6 @@
 
 (conj (conj [] "a") "N")
 
-(= 1147 (grow input 10))
-
-(grow input 100) ;149996
-(grow input 1000) ;190512
-(grow input 10000)
+(= 1147 (grow input-small 10))
+;solved P1
+(= 536370 (grow input 10))
