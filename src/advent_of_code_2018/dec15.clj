@@ -287,15 +287,15 @@ actors (actors-by-reading-order (input-to-actors input 200))
 (def b-string (draw-board [7 7] board actors))
 (partition (- 7 2) b-string)
 
-(defn write-area-to-file
-  [area
-   filename]
-  (with-open [w (clojure.java.io/writer filename)]
-    (doseq [line area]
-      (.write w line)
-      (.newLine w))))
-
-(write-area-to-file ["abc" "cde"] "src/advent_of_code_2018/out.txt")
+;(defn write-area-to-file
+;  [area
+;   filename]
+;  (with-open [w (clojure.java.io/writer filename)]
+;    (doseq [line area]
+;      (.write w line)
+;      (.newLine w))))
+;
+;(write-area-to-file ["abc" "cde"] "src/advent_of_code_2018/out.txt")
 
 (defn board-to-file
   [[max-x max-y]
