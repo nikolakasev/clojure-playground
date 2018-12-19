@@ -247,13 +247,9 @@
               (let [enemy-to-attack (first (sort-by :hp adjacent-enemies))
                     actors-after-attack (attack-actor (:location enemy-to-attack) all-actors attack-function)
                     dead-actors (filter #(<= (:hp %) 0) actors-after-attack)]
-                (if (empty? dead-actors)
-                  (recur round
-                         actors-after-attack
-                         (rest actors-left))
-                  (recur round
-                         (remove-dead-actors dead-actors actors-after-attack)
-                         (remove-dead-actors dead-actors actors-left))))
+                (recur round
+                       (remove-dead-actors dead-actors actors-after-attack)
+                       (rest (remove-dead-actors dead-actors actors-left))))
               (if (not (empty? reachable-enemies))
                 ;move if there are reachable enemies
                 (let [in-range (set/difference (set (mapcat #(g/successors board %) reachable-enemies))
@@ -269,7 +265,59 @@
                        all-actors
                        (rest actors-left))))))
         ;battle ends
-        (* round (total-health all-actors))))))
+        all-actors))));(* round (total-health all-actors))))))
+
+(defn draw-board
+  [[max-x
+    max-y]
+   board
+   actors]
+  (for [y (range 1 (- max-y 1))
+        x (range 1 (- max-x 1))]
+    (let [found (filter #(= [x y] (:location %)) actors)]
+      (if (contains? (g/nodes board) (location-to-node [x y]))
+        (if (= 1 (count found)) (:type (first found)) ".")
+        "#"))))
+
+board (g/weighted-digraph (apply hash-map (mapcat identity (input-to-board input))))
+actors (actors-by-reading-order (input-to-actors input 200))
+
+(g/nodes board)
+
+(def b-string (draw-board [7 7] board actors))
+(partition (- 7 2) b-string)
+
+(defn write-area-to-file
+  [area
+   filename]
+  (with-open [w (clojure.java.io/writer filename)]
+    (doseq [line area]
+      (.write w line)
+      (.newLine w))))
+
+(write-area-to-file ["abc" "cde"] "src/advent_of_code_2018/out.txt")
+
+(defn board-to-file
+  [[max-x max-y]
+   board
+   actors
+   file-name]
+  (let [lines (partition (- max-x 2) (draw-board [max-x max-y] board actors))]
+    lines))
+
+(board-to-file [7 7] board actors "src/advent_of_code_2018/out.txt")
+
+(io/view board)
+
+(battle "#########
+#G..G..G#
+#.......#
+#.......#
+#G..E..G#
+#.......#
+#.......#
+#G..G..G#
+#########")
 
 (= 27730 (battle "#######
 #.G...#
@@ -277,6 +325,14 @@
 #.#.#G#
 #..G#E#
 #.....#
+#######"))
+
+(= 36334 (battle "#######
+#G..#E#
+#E#E.E#
+#G.##.#
+#...#E#
+#...E.#
 #######"))
 
 (= 1 1)
