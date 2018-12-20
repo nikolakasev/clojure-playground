@@ -126,9 +126,18 @@
 
 (change-acre \# ".#.|.")
 
+(defn fast-forward-in-time
+  [from-minute
+   cycle
+   to-minute
+   history]
+  (let [cycle-starts (- from-minute cycle)
+        minutes-after-cycle-starts (mod (- to-minute cycle-starts) cycle)]
+    (forest-to-outcome (:forest (first (filter #(= (+ cycle-starts minutes-after-cycle-starts) (:minute %)) history))))))
+
 (defn grow
   [input
-   seconds]
+   minutes]
   (let [lines (str/split-lines input)
         forest (str/join lines)
         max-x (count (first lines))
@@ -136,21 +145,36 @@
         total-acres (* max-x max-y)]
     (loop [forest forest
            acres-left forest
+           history []
            new-forest []
            time-limit 0]
-      (if (= time-limit seconds)
+      (if (= time-limit minutes)
         (forest-to-outcome (str/join forest))
         (if (empty? acres-left)
-          (recur (str/join new-forest) (str/join new-forest) [] (inc time-limit))
+          ;history repeats for the first time
+          (let [forest (str/join new-forest)
+                repeats (filter #(= forest (:forest %)) history)
+                current-minute (inc time-limit)]
+            (if (= 1 (count repeats))
+              (fast-forward-in-time current-minute (- current-minute (:minute (first repeats))) minutes history)
+              (recur forest forest (conj history {:forest forest :minute (inc time-limit)}) [] (inc time-limit))))
           (let [acre-number (+ 1 (- total-acres (count acres-left)))
                 acre (first acres-left)
                 adjacent-numbers (adjacent-acres acre-number max-x max-y)
                 ;nth starts from 0
                 acres-around (map #(nth forest (- % 1)) adjacent-numbers)]
-            (recur forest (rest acres-left) (conj new-forest (change-acre acre acres-around)) time-limit)))))))
+            (recur forest (rest acres-left) history (conj new-forest (change-acre acre acres-around)) time-limit)))))))
 
 (conj (conj [] "a") "N")
+
+(map #(nth "asdada" %) [1 2 4])
 
 (= 1147 (grow input-small 10))
 ;solved P1
 (= 536370 (grow input 10))
+
+;190512 solved P2
+(grow input 1000)
+;first repetition at 597 minutes (same forest occurred at 569 minutes), so cycle is 28 minutes
+;569 + 11 = 580 is the forest that occurs at the 1000000000 minute
+(mod (- 1000000000 569) 28) ;11
