@@ -322,17 +322,8 @@
                        all-actors
                        (rest actors-left))))))
         ;battle ends
-        (* round (total-health all-actors))))))
-
-;(battle "#########
-;#G..G..G#
-;#.......#
-;#.......#
-;#G..E..G#
-;#.......#
-;#.......#
-;#G..G..G#
-;#########")
+        ;(board-to-file (board-size input) board all-actors "src/advent_of_code_2018/out.txt")))))
+        all-actors))));(* round (total-health all-actors))))))
 
 (= 27730 (battle "#######
 #.G...#
@@ -340,7 +331,7 @@
 #.#.#G#
 #..G#E#
 #.....#
-#######"))
+#######")) ;incorrect position, G3 moves to the wrong target
 
 (adjacent-enemies [4 1] (:type (first actors)) actors b)
 
@@ -351,5 +342,39 @@
 #...#E#
 #...E.#
 #######"))
+
+(= 39514 (battle "#######
+#E..EG#
+#.#G.E#
+#E.##E#
+#G..#.#
+#..E#.#
+#######"))
+
+(= 27755 (battle "#######
+#E.G#.#
+#.#G..#
+#G.#.G#
+#G..#.#
+#...E.#
+#######")) ;calculates health incorrectly, incorrect position
+
+(= 28944 (battle "#######
+#.E...#
+#.#..G#
+#.###.#
+#E#G#G#
+#...#G#
+#######")) ;calculates health incorrectly, incorrect position
+
+(= 18740 (battle "#########
+#G......#
+#.E.#...#
+#..##..G#
+#...##..#
+#...#...#
+#.G...G.#
+#.....G.#
+#########"))
 
 (= 1 1)
