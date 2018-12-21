@@ -57,16 +57,26 @@
   [[x y]]
   (keyword (str x "-" y)))
 
-(defn input-to-board
+(defn board-size
   [input]
   (let [lines (map vec (str/split-lines input))
         max-x (count (first lines))
         max-y (count lines)]
+    [max-x max-y]))
+
+(board-size input)
+
+(defn input-to-board
+  [input]
+  (let [lines (map vec (str/split-lines input))
+        [max-x max-y] (board-size input)]
     ;don't bother with the outside walls
     (for [y (range 1 (- max-y 1))
           x (range 1 (- max-x 1))]
       (if (not (= \# (nth (nth lines y) x)))
         [(location-to-node [x y]) (neighbours lines [x y])]))))
+
+(input-to-board input)
 
 (defn input-to-actors
   [input
@@ -83,6 +93,8 @@
     (filter (comp not nil?) actors)))
 
 (def actors (input-to-actors input 200))
+
+(first actors)
 
 (:E (first actors))
 
@@ -118,6 +130,22 @@
 (def locations-by-reading-order
   (partial sort-by #(+ (first %)
                        (* 10 (second %)))))
+
+(defn who-to-attack
+  [actors]
+  (let [lowest-hp-first (sort-by :hp actors)
+        possible (reduce (fn [actors actor]
+                           (if (or (empty? actors) (= (:hp (first actors)) (:hp actor)))
+                             (concat actors [actor])
+                             actors))
+                         []
+                         lowest-hp-first)]
+    (first (locations-by-reading-order (map :location possible)))))
+
+(who-to-attack [{:type "G", :hp 1, :location [2 1]}
+                {:type "G", :hp 156, :location [2 1]}
+                {:type "G", :hp 140, :location [3 1]}
+                {:type "G", :hp 200, :location [3 1]}])
 
 (locations-by-reading-order [[1 2] [1 1] [3 4]])
 
@@ -165,9 +193,9 @@
 (not (empty? [1 2]))
 
 (defn enemies-of
-  [actor
+  [actor-type
    all-actors]
-  (filter #(not (= (:type actor) (:type %))) all-actors))
+  (filter #(not (= actor-type (:type %))) all-actors))
 
 (defn allies-of
   [actor
@@ -176,16 +204,21 @@
   (filter #(and (= (:type actor) (:type %)) (not (= (:location actor) (:location %)))) all-actors))
 
 (defn adjacent-enemies
-  [actor
+  [actor-location
+   actor-type
    all-actors
    board]
-  (let [adjacent-nodes (set (g/successors board (location-to-node (:location actor))))
-        enemy-nodes (set (map (comp location-to-node :location) (enemies-of actor all-actors)))]
+  (let [adjacent-nodes (set (g/successors board (location-to-node actor-location)))
+        enemy-nodes (set (map (comp location-to-node :location) (enemies-of actor-type all-actors)))]
     ;a list of enemy actors
     (mapcat (fn [node] (filter #(= (node-to-location node) (:location %)) all-actors))
             (set/intersection adjacent-nodes enemy-nodes))))
 
-(adjacent-enemies (second actors) actors b)
+(empty? (adjacent-enemies [3 2] "G" actors b))
+
+(empty? (adjacent-enemies [3 1] "G" actors b))
+
+(first actors)
 
 (defn not-an-actor
   [actors neighbor predecessor depth]
@@ -200,62 +233,6 @@
 #..G#E#
 #.....#
 #######")
-
-(defn battle
-  [input]
-  (let [board (g/weighted-digraph (apply hash-map (mapcat identity (input-to-board input))))
-        actors (actors-by-reading-order (input-to-actors input 200))
-        attack-function #(- % 3)]
-    (loop [round 0
-           ;changes only when an actor dies
-           all-actors actors
-           ;for each actor apply it's logic
-           actors-left actors]
-      (if (enemies-left all-actors)
-        (if (empty? actors-left)
-          ;round ends
-          (recur (inc round)
-                 (actors-by-reading-order all-actors)
-                 (actors-by-reading-order all-actors))
-          ;round continues
-          (let [actor (first actors-left)
-                ;to be able to attack
-                adjacent-enemies (adjacent-enemies actor all-actors board)
-                ;TODO refactor next two and "inject" enemies-of or allies-of?
-                enemy-nodes (set (map (comp location-to-node :location) (enemies-of actor all-actors)))
-                allied-nodes (set (map (comp location-to-node :location) (allies-of actor all-actors)))
-                reachable-locations (a/bf-traverse board
-                                                   (location-to-node (:location actor))
-                                                   :when (partial not-an-actor enemy-nodes))
-                reachable-enemies (set/intersection (set reachable-locations)
-                                                    enemy-nodes)]
-            (if (not (empty? adjacent-enemies))
-              ;attack! the enemy with the lowest health and clean up the mess
-              (let [enemy-to-attack (first (sort-by :hp adjacent-enemies))
-                    actors-after-attack (attack-actor (:location enemy-to-attack) all-actors attack-function)
-                    dead-actors (filter #(<= (:hp %) 0) actors-after-attack)]
-                (recur round
-                       (remove-dead-actors dead-actors actors-after-attack)
-                       (rest (remove-dead-actors dead-actors actors-left))))
-              (if (not (empty? reachable-enemies))
-                ;move if there are reachable enemies
-                (let [in-range (set/difference (set (mapcat #(g/successors board %) reachable-enemies))
-                                               (set (map (comp location-to-node :location) all-actors)))
-                      target (first (locations-by-reading-order (map node-to-location in-range)))
-                      ;can't go through an enemy or an ally
-                      path-to-target (a/bf-path board
-                                                (location-to-node (:location actor)) (location-to-node target)
-                                                :when (partial not-an-actor (set/union allied-nodes enemy-nodes)))
-                      move-to (node-to-location (second path-to-target))]
-                  (recur round
-                         (move-actor (:location actor) move-to all-actors)
-                         (rest actors-left)))
-                ;nothing to do because there are no adjacent or reachable enemies
-                (recur round
-                       all-actors
-                       (rest actors-left))))))
-        ;battle ends
-        all-actors))));(* round (total-health all-actors))))))
 
 (defn draw-board
   [[max-x
@@ -286,15 +263,76 @@
         lines-as-string (map str/join lines)]
     (write-area-to-file lines-as-string file-name)))
 
-(battle "#########
-#G..G..G#
-#.......#
-#.......#
-#G..E..G#
-#.......#
-#.......#
-#G..G..G#
-#########")
+(defn battle
+  [input]
+  (let [board (g/weighted-digraph (apply hash-map (mapcat identity (input-to-board input))))
+        actors (actors-by-reading-order (input-to-actors input 200))
+        attack-function #(- % 3)]
+    (loop [round 1
+           ;changes only when an actor dies
+           all-actors actors
+           ;for each actor apply it's logic
+           actors-left actors]
+      (if (enemies-left all-actors)
+        (if (empty? actors-left)
+          ;round ends
+          (recur (inc round)
+                 (actors-by-reading-order all-actors)
+                 (actors-by-reading-order all-actors))
+          ;round continues
+          (let [actor (first actors-left)
+                able-to-attack (adjacent-enemies (:location actor) (:type actor) all-actors board)
+                ;TODO refactor next two and "inject" enemies-of or allies-of?
+                enemy-nodes (set (map (comp location-to-node :location) (enemies-of (:type actor) all-actors)))
+                allied-nodes (set (map (comp location-to-node :location) (allies-of actor all-actors)))
+                reachable-locations (a/bf-traverse board
+                                                   (location-to-node (:location actor))
+                                                   :when (partial not-an-actor allied-nodes))
+                reachable-enemies (set/intersection (set reachable-locations)
+                                                    enemy-nodes)]
+            (if (not (empty? able-to-attack))
+              ;attack! the enemy with the lowest health and clean up the mess
+              (let [enemy-at-location (who-to-attack able-to-attack)
+                    actors-after-attack (attack-actor enemy-at-location all-actors attack-function)
+                    dead-actors (filter #(<= (:hp %) 0) actors-after-attack)]
+                (recur round
+                       (remove-dead-actors dead-actors actors-after-attack)
+                       (rest (remove-dead-actors dead-actors actors-left))))
+              (if (not (empty? reachable-enemies))
+                ;move if there are reachable enemies
+                (let [in-range (set/difference (set (mapcat #(g/successors board %) reachable-enemies))
+                                               (set (map (comp location-to-node :location) all-actors)))
+                      target (first (locations-by-reading-order (map node-to-location in-range)))
+                      path-to-target (a/bf-path board
+                                                (location-to-node (:location actor)) (location-to-node target)
+                                                :when (partial not-an-actor allied-nodes))
+                      move-to (node-to-location (second path-to-target))
+                      ;will there be adjacent enemies after the move?
+                      will-be-able-to-attack (adjacent-enemies move-to (:type actor) all-actors board)]
+                  (if (not (empty? will-be-able-to-attack))
+                    ;leave the actor, so it can attack right after moving
+                    (recur round
+                           (move-actor (:location actor) move-to all-actors)
+                           (move-actor (:location actor) move-to actors-left))
+                    (recur round
+                           (move-actor (:location actor) move-to all-actors)
+                           (rest actors-left))))
+                ;nothing to do because there are no adjacent or reachable enemies
+                (recur round
+                       all-actors
+                       (rest actors-left))))))
+        ;battle ends
+        (* round (total-health all-actors))))))
+
+;(battle "#########
+;#G..G..G#
+;#.......#
+;#.......#
+;#G..E..G#
+;#.......#
+;#.......#
+;#G..G..G#
+;#########")
 
 (= 27730 (battle "#######
 #.G...#
@@ -303,6 +341,8 @@
 #..G#E#
 #.....#
 #######"))
+
+(adjacent-enemies [4 1] (:type (first actors)) actors b)
 
 (= 36334 (battle "#######
 #G..#E#
