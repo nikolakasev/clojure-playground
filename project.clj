@@ -7,5 +7,5 @@
                            [org.clojure/math.combinatorics "0.1.4"]
                            [org.clojure/math.numeric-tower "0.0.4"]
                            [aysylu/loom "1.0.2"]
-                           [proto-repl "0.3.1"]]
+                           [compliment "0.3.8"]]
             :global-vars {*warn-on-reflection* true})
