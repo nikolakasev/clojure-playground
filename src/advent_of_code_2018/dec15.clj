@@ -187,9 +187,9 @@
 
 (adjacent-enemies (second actors) actors b)
 
-(defn not-an-ally
-  [allies neighbor predecessor depth]
-  (not (contains? allies neighbor)))
+(defn not-an-actor
+  [actors neighbor predecessor depth]
+  (not (contains? actors neighbor)))
 
 (node-to-location :1-2)
 
@@ -200,22 +200,6 @@
 #..G#E#
 #.....#
 #######")
-
-(def board (g/weighted-digraph (apply hash-map (mapcat identity (input-to-board input)))))
-
-(def all-actors (input-to-actors input 200))
-(def actor (first all-actors))
-
-(def enemy-nodes (set (map (comp location-to-node :location) (enemies-of actor all-actors))))
-(def allied-nodes (set (map (comp location-to-node :location) (allies-of actor all-actors))))
-(def reachable-enemies (set/intersection (set (a/bf-traverse board (location-to-node (:location actor)) :when (partial not-an-ally allied-nodes)))
-                                         enemy-nodes))
-
-(def in-range (set/difference (set (mapcat #(g/successors board %) reachable-enemies))
-                              (set (map (comp location-to-node :location) all-actors))))
-(def target (first (locations-by-reading-order (map node-to-location in-range))))
-(def path-to-target (a/dijkstra-path board (location-to-node (:location actor)) (location-to-node target)))
-(def path-bf (a/bf-path board (location-to-node (:location actor)) (location-to-node target) :when (partial not-an-ally allied-nodes)))
 
 (defn battle
   [input]
@@ -240,7 +224,10 @@
                 ;TODO refactor next two and "inject" enemies-of or allies-of?
                 enemy-nodes (set (map (comp location-to-node :location) (enemies-of actor all-actors)))
                 allied-nodes (set (map (comp location-to-node :location) (allies-of actor all-actors)))
-                reachable-enemies (set/intersection (set (a/bf-traverse board (location-to-node (:location actor)) :when (partial not-an-ally allied-nodes)))
+                reachable-locations (a/bf-traverse board
+                                                   (location-to-node (:location actor))
+                                                   :when (partial not-an-actor enemy-nodes))
+                reachable-enemies (set/intersection (set reachable-locations)
                                                     enemy-nodes)]
             (if (not (empty? adjacent-enemies))
               ;attack! the enemy with the lowest health and clean up the mess
@@ -255,7 +242,10 @@
                 (let [in-range (set/difference (set (mapcat #(g/successors board %) reachable-enemies))
                                                (set (map (comp location-to-node :location) all-actors)))
                       target (first (locations-by-reading-order (map node-to-location in-range)))
-                      path-to-target (a/bf-path board (location-to-node (:location actor)) (location-to-node target) :when (partial not-an-ally allied-nodes))
+                      ;can't go through an enemy or an ally
+                      path-to-target (a/bf-path board
+                                                (location-to-node (:location actor)) (location-to-node target)
+                                                :when (partial not-an-actor (set/union allied-nodes enemy-nodes)))
                       move-to (node-to-location (second path-to-target))]
                   (recur round
                          (move-actor (:location actor) move-to all-actors)
@@ -279,14 +269,6 @@
         (if (= 1 (count found)) (:type (first found)) ".")
         "#"))))
 
-board (g/weighted-digraph (apply hash-map (mapcat identity (input-to-board input))))
-actors (actors-by-reading-order (input-to-actors input 200))
-
-(g/nodes board)
-
-(def b-string (draw-board [7 7] board actors))
-(partition (- 7 2) b-string)
-
 (defn write-area-to-file
   [area
    filename]
@@ -303,10 +285,6 @@ actors (actors-by-reading-order (input-to-actors input 200))
   (let [lines (partition (- max-x 2) (draw-board [max-x max-y] board actors))
         lines-as-string (map str/join lines)]
     (write-area-to-file lines-as-string file-name)))
-
-(board-to-file [7 7] board actors "src/advent_of_code_2018/out.txt")
-
-(io/view board)
 
 (battle "#########
 #G..G..G#
