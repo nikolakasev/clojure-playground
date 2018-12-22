@@ -64,8 +64,6 @@
         max-y (count lines)]
     [max-x max-y]))
 
-(board-size input)
-
 (defn input-to-board
   [input]
   (let [lines (map vec (str/split-lines input))
@@ -131,21 +129,24 @@
   (partial sort-by #(+ (first %)
                        (* 10 (second %)))))
 
-(defn who-to-attack
-  [actors]
-  (let [lowest-hp-first (sort-by :hp actors)
-        possible (reduce (fn [actors actor]
-                           (if (or (empty? actors) (= (:hp (first actors)) (:hp actor)))
-                             (concat actors [actor])
-                             actors))
+(defn reading-order-sort-by
+  "Sort a `coll` of maps using a `sort-function`, the return one location by reading order."
+  [sort-function
+   location-function
+   coll]
+  (let [lowest-hp-first (sort-by sort-function coll)
+        possible (reduce (fn [coll item]
+                           (if (or (empty? coll) (= (sort-function (first coll)) (sort-function item)))
+                             (concat coll [item])
+                             coll))
                          []
                          lowest-hp-first)]
-    (first (locations-by-reading-order (map :location possible)))))
+    (first (locations-by-reading-order (map location-function possible)))))
 
-(who-to-attack [{:type "G", :hp 1, :location [2 1]}
-                {:type "G", :hp 156, :location [2 1]}
-                {:type "G", :hp 140, :location [3 1]}
-                {:type "G", :hp 200, :location [3 1]}])
+(reading-order-sort-by :hp :location [{:type "G", :hp 1, :location [2 1]}
+                                      {:type "G", :hp 156, :location [2 1]}
+                                      {:type "G", :hp 140, :location [3 1]}
+                                      {:type "G", :hp 200, :location [3 1]}])
 
 (locations-by-reading-order [[1 2] [1 1] [3 4]])
 
@@ -263,6 +264,26 @@
         lines-as-string (map str/join lines)]
     (write-area-to-file lines-as-string file-name)))
 
+(defn steps-to-location
+  [from-location
+   actors-in-the-way
+   board
+   to-location]
+  (let [path (a/bf-path board
+                        (location-to-node from-location) (location-to-node to-location)
+                        :when (partial not-an-actor actors-in-the-way))]
+    ;the path includes the first step, so discard it
+    {:location to-location :steps-to-reach (dec (count path))}))
+
+(steps-to-location [3 4] [] b [5 5])
+
+(map (comp (partial steps-to-location [3 4] [] b) node-to-location) [:4-1 :3-2 :5-5])
+
+(reading-order-sort-by :steps-to-reach :location
+                       (map (partial steps-to-location [3 4] [] b) [[4 1] [3 2] [5 5]]))
+
+(first actors)
+
 (defn battle
   [input]
   (let [board (g/weighted-digraph (apply hash-map (mapcat identity (input-to-board input))))
@@ -292,7 +313,7 @@
                                                     enemy-nodes)]
             (if (not (empty? able-to-attack))
               ;attack! the enemy with the lowest health and clean up the mess
-              (let [enemy-at-location (who-to-attack able-to-attack)
+              (let [enemy-at-location (reading-order-sort-by :hp :location able-to-attack)
                     actors-after-attack (attack-actor enemy-at-location all-actors attack-function)
                     dead-actors (filter #(<= (:hp %) 0) actors-after-attack)]
                 (recur round
@@ -302,7 +323,11 @@
                 ;move if there are reachable enemies
                 (let [in-range (set/difference (set (mapcat #(g/successors board %) reachable-enemies))
                                                (set (map (comp location-to-node :location) all-actors)))
-                      target (first (locations-by-reading-order (map node-to-location in-range)))
+                      target (reading-order-sort-by :steps-to-reach :location
+                                                    ;this is beauty :) first turn a node to location, then calculate the steps
+                                                    (map (comp (partial steps-to-location (:location actor) allied-nodes board)
+                                                               node-to-location)
+                                                         in-range))
                       path-to-target (a/bf-path board
                                                 (location-to-node (:location actor)) (location-to-node target)
                                                 :when (partial not-an-actor allied-nodes))
@@ -323,7 +348,7 @@
                        (rest actors-left))))))
         ;battle ends
         ;(board-to-file (board-size input) board all-actors "src/advent_of_code_2018/out.txt")))))
-        all-actors))));(* round (total-health all-actors))))))
+        (* (dec round) (total-health all-actors))))))
 
 (= 27730 (battle "#######
 #.G...#
@@ -357,7 +382,7 @@
 #G.#.G#
 #G..#.#
 #...E.#
-#######")) ;calculates health incorrectly, incorrect position
+#######"))
 
 (= 28944 (battle "#######
 #.E...#
@@ -365,7 +390,7 @@
 #.###.#
 #E#G#G#
 #...#G#
-#######")) ;calculates health incorrectly, incorrect position
+#######"))
 
 (= 18740 (battle "#########
 #G......#
