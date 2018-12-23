@@ -284,16 +284,23 @@
 
 (first actors)
 
+(io/view b)
+
+(a/dijkstra-path b :3-3 :1-3)
+;(node-to-location (second (a/dijkstra-path (apply g/remove-nodes b [:2-2]) :3-3 :2-2)))
+
 (defn battle
   [input]
   (let [board (g/weighted-digraph (apply hash-map (mapcat identity (input-to-board input))))
         actors (actors-by-reading-order (input-to-actors input 200))
         attack-function #(- % 3)]
+    (board-to-file (board-size input) board actors "src/advent_of_code_2018/board-initial.txt")
     (loop [round 1
            ;changes only when an actor dies
            all-actors actors
            ;for each actor apply it's logic
            actors-left actors]
+      (board-to-file (board-size input) board all-actors (str "src/advent_of_code_2018/board-" round ".txt"))
       (if (enemies-left all-actors)
         (if (empty? actors-left)
           ;round ends
@@ -306,6 +313,7 @@
                 ;TODO refactor next two and "inject" enemies-of or allies-of?
                 enemy-nodes (set (map (comp location-to-node :location) (enemies-of (:type actor) all-actors)))
                 allied-nodes (set (map (comp location-to-node :location) (allies-of actor all-actors)))
+                other-actor-nodes (set/union enemy-nodes allied-nodes)
                 reachable-locations (a/bf-traverse board
                                                    (location-to-node (:location actor))
                                                    :when (partial not-an-actor allied-nodes))
@@ -322,15 +330,15 @@
               (if (not (empty? reachable-enemies))
                 ;move if there are reachable enemies
                 (let [in-range (set/difference (set (mapcat #(g/successors board %) reachable-enemies))
-                                               (set (map (comp location-to-node :location) all-actors)))
+                                               other-actor-nodes)
                       target (reading-order-sort-by :steps-to-reach :location
                                                     ;this is beauty :) first turn a node to location, then calculate the steps
-                                                    (map (comp (partial steps-to-location (:location actor) allied-nodes board)
+                                                    (map (comp (partial steps-to-location (:location actor) other-actor-nodes board)
                                                                node-to-location)
                                                          in-range))
-                      path-to-target (a/bf-path board
-                                                (location-to-node (:location actor)) (location-to-node target)
-                                                :when (partial not-an-actor allied-nodes))
+                      board-without-allies (apply g/remove-nodes board allied-nodes)
+                      path-to-target (a/dijkstra-path board-without-allies
+                                                      (location-to-node (:location actor)) (location-to-node target))
                       move-to (node-to-location (second path-to-target))
                       ;will there be adjacent enemies after the move?
                       will-be-able-to-attack (adjacent-enemies move-to (:type actor) all-actors board)]
@@ -348,7 +356,17 @@
                        (rest actors-left))))))
         ;battle ends
         ;(board-to-file (board-size input) board all-actors "src/advent_of_code_2018/out.txt")))))
-        (* (dec round) (total-health all-actors))))))
+        (* (if (empty? actors-left) round (dec round)) (total-health all-actors))))))
+
+(battle "#########
+#G..G..G#
+#.......#
+#.......#
+#G..E..G#
+#.......#
+#.......#
+#G..G..G#
+#########")
 
 (= 27730 (battle "#######
 #.G...#
@@ -403,3 +421,6 @@
 #########"))
 
 (= 1 1)
+
+;200410 isn't it, 203273 neither
+(battle (slurp "src/advent_of_code_2018/input-dec15.txt"))
