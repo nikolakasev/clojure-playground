@@ -1,7 +1,7 @@
 (ns advent-of-code-2018.dec15
   (:require [clojure.string :as str])
   (:require [loom.graph :as g])
-  (:require [loom.io :as io])
+;  (:require [loom.io :as io])
   (:require [loom.alg :as a])
   (:require [clojure.set :as set]))
 
@@ -225,16 +225,6 @@
   [actors neighbor predecessor depth]
   (not (contains? actors neighbor)))
 
-(node-to-location :1-2)
-
-(def input "#######
-#.G...#
-#...EG#
-#.#.#G#
-#..G#E#
-#.....#
-#######")
-
 (defn draw-board
   [[max-x
     max-y]
@@ -266,41 +256,25 @@
 
 (defn steps-to-location
   [from-location
-   actors-in-the-way
    board
    to-location]
-  (let [path (a/bf-path board
-                        (location-to-node from-location) (location-to-node to-location)
-                        :when (partial not-an-actor actors-in-the-way))]
+  (let [path (a/dijkstra-path board
+                              (location-to-node from-location) (location-to-node to-location))]
     ;the path includes the first step, so discard it
     {:location to-location :steps-to-reach (dec (count path))}))
-
-(steps-to-location [3 4] [] b [5 5])
-
-(map (comp (partial steps-to-location [3 4] [] b) node-to-location) [:4-1 :3-2 :5-5])
-
-(reading-order-sort-by :steps-to-reach :location
-                       (map (partial steps-to-location [3 4] [] b) [[4 1] [3 2] [5 5]]))
-
-(first actors)
-
-(io/view b)
-
-(a/dijkstra-path b :3-3 :1-3)
-;(node-to-location (second (a/dijkstra-path (apply g/remove-nodes b [:2-2]) :3-3 :2-2)))
 
 (defn battle
   [input]
   (let [board (g/weighted-digraph (apply hash-map (mapcat identity (input-to-board input))))
         actors (actors-by-reading-order (input-to-actors input 200))
         attack-function #(- % 3)]
-    (board-to-file (board-size input) board actors "src/advent_of_code_2018/board-initial.txt")
+    ;(board-to-file (board-size input) board actors "src/advent_of_code_2018/board-initial.txt")
     (loop [round 1
            ;changes only when an actor dies
            all-actors actors
            ;for each actor apply it's logic
            actors-left actors]
-      (board-to-file (board-size input) board all-actors (str "src/advent_of_code_2018/board-" round ".txt"))
+      ;(board-to-file (board-size input) board all-actors (str "src/advent_of_code_2018/board-" round ".txt"))
       (if (enemies-left all-actors)
         (if (empty? actors-left)
           ;round ends
@@ -331,13 +305,13 @@
                 ;move if there are reachable enemies
                 (let [in-range (set/difference (set (mapcat #(g/successors board %) reachable-enemies))
                                                other-actor-nodes)
+                      board-without-other-actors (apply g/remove-nodes board allied-nodes)
                       target (reading-order-sort-by :steps-to-reach :location
                                                     ;this is beauty :) first turn a node to location, then calculate the steps
-                                                    (map (comp (partial steps-to-location (:location actor) other-actor-nodes board)
+                                                    (map (comp (partial steps-to-location (:location actor) board-without-other-actors)
                                                                node-to-location)
                                                          in-range))
-                      board-without-allies (apply g/remove-nodes board allied-nodes)
-                      path-to-target (a/dijkstra-path board-without-allies
+                      path-to-target (a/dijkstra-path board-without-other-actors
                                                       (location-to-node (:location actor)) (location-to-node target))
                       move-to (node-to-location (second path-to-target))
                       ;will there be adjacent enemies after the move?
@@ -374,9 +348,7 @@
 #.#.#G#
 #..G#E#
 #.....#
-#######")) ;incorrect position, G3 moves to the wrong target
-
-(adjacent-enemies [4 1] (:type (first actors)) actors b)
+#######"))
 
 (= 36334 (battle "#######
 #G..#E#
@@ -420,7 +392,6 @@
 #.....G.#
 #########"))
 
-(= 1 1)
-
 ;200410 isn't it, 203273 neither
+;solved P1, 184206
 (battle (slurp "src/advent_of_code_2018/input-dec15.txt"))
