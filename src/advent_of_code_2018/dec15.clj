@@ -169,17 +169,18 @@
   "Applies attack function `f` on an actor which is located on `location`."
   [location
    all-actors
-   f]
+   goblin-attack-function
+   elf-attack-function]
   ;"select for update" pattern on a list of maps
-  (map #(if (= location (:location %)) (update % :hp f) %) all-actors))
+  (map #(if (= location (:location %))
+          (update % :hp (if (= "E" (:type %)) goblin-attack-function elf-attack-function))
+          %) all-actors))
 
 (= [1 2] [1 4])
 
 (:location (first actors))
 
-(sort-by :hp (attack-actor [3 2] actors #(- % 3)))
-
-(filter #(<= (:hp %) 0) (attack-actor [3 2] actors #(- % 3)))
+(sort-by :hp (attack-actor [4 2] actors #(- % 3) #(- % 10)))
 
 (def locs (set (map :location (take 2 actors))))
 
@@ -263,11 +264,12 @@
     ;the path includes the first step, so discard it
     {:location to-location :steps-to-reach (dec (count path))}))
 
-(defn battle
-  [input]
+(defn battle-with-attack-function
+  [input
+   goblin-attack-function
+   elf-attack-function]
   (let [board (g/weighted-digraph (apply hash-map (mapcat identity (input-to-board input))))
-        actors (actors-by-reading-order (input-to-actors input 200))
-        attack-function #(- % 3)]
+        actors (actors-by-reading-order (input-to-actors input 200))]
     ;(board-to-file (board-size input) board actors "src/advent_of_code_2018/board-initial.txt")
     (loop [round 1
            ;changes only when an actor dies
@@ -296,7 +298,10 @@
             (if (not (empty? able-to-attack))
               ;attack! the enemy with the lowest health and clean up the mess
               (let [enemy-at-location (reading-order-sort-by :hp :location able-to-attack)
-                    actors-after-attack (attack-actor enemy-at-location all-actors attack-function)
+                    actors-after-attack (attack-actor enemy-at-location
+                                                      all-actors
+                                                      goblin-attack-function
+                                                      elf-attack-function)
                     dead-actors (filter #(<= (:hp %) 0) actors-after-attack)]
                 (recur round
                        (remove-dead-actors dead-actors actors-after-attack)
@@ -330,7 +335,11 @@
                        (rest actors-left))))))
         ;battle ends
         ;(board-to-file (board-size input) board all-actors "src/advent_of_code_2018/out.txt")))))
-        (* (if (empty? actors-left) round (dec round)) (total-health all-actors))))))
+        [(* (if (empty? actors-left) round (dec round)) (total-health all-actors)) all-actors]))))
+
+(defn battle
+  [input]
+  (first (battle-with-attack-function input #(- % 3) #(- % 3))))
 
 (battle "#########
 #G..G..G#
@@ -395,3 +404,22 @@
 ;200410 isn't it, 203273 neither
 ;solved P1, 184206
 (battle (slurp "src/advent_of_code_2018/input-dec15.txt"))
+
+(defn handicap-goblins
+  [input]
+  (let [all-actors (input-to-actors input 200)
+        immortal-elves (count (enemies-of "G" all-actors))
+        goblin-f #(- % 3)]
+    (loop [elf-power 4
+           battle-outcome []]
+      (println (str "function " elf-power))
+      (if (= immortal-elves (count (enemies-of "G" (second battle-outcome))))
+        (first battle-outcome)
+        (recur (inc elf-power) (battle-with-attack-function input goblin-f #(- % elf-power)))))))
+
+(count (enemies-of "G" (second (battle-with-attack-function input #(- % 3) #(- % 15)))))
+
+(handicap-goblins input)
+
+;with an attack of 30, elves win with 41804, solved P2
+(handicap-goblins (slurp "src/advent_of_code_2018/input-dec15.txt"))
