@@ -240,8 +240,8 @@
     max-y]
    board
    actors]
-  (for [y (range 1 (- max-y 1))
-        x (range 1 (- max-x 1))]
+  (for [y (range 0 max-y)
+        x (range 0 max-x)]
     (let [found (filter #(= [x y] (:location %)) actors)]
       (if (contains? (g/nodes board) (location-to-node [x y]))
         (if (= 1 (count found)) (:type (first found)) ".")
@@ -260,7 +260,7 @@
    board
    actors
    file-name]
-  (let [lines (partition (- max-x 2) (draw-board [max-x max-y] board actors))
+  (let [lines (partition max-x (draw-board [max-x max-y] board actors))
         lines-as-string (map str/join lines)]
     (write-area-to-file lines-as-string file-name)))
 
