@@ -35,33 +35,54 @@ pos=<1,1,2>, r=1
 pos=<1,3,1>, r=1"))
 
 (defn match-to-nanobot
-  [[_ x y z radius]]
-  {:x (read-string x) :y (read-string y) :z (read-string z) :radius (read-string radius)})
-
-(map (comp match-to-nanobot
-           (partial re-matches #"pos=<(\-?\d*)\,(\-?\d*)\,(\-?\d*)>\,\sr=(\d*)")) input-small)
-
-(def nanobots (sort-by :radius (map (comp match-to-nanobot
-                                          (partial re-matches
-                                                   #"pos=<(\-?\d*)\,(\-?\d*)\,(\-?\d*)>\,\sr=(\d*)")) input-small)))
-
-(last nanobots)
-(rest nanobots)
-
-(def beacon (last nanobots))
-
-(filter #(<= % (:radius beacon)) (map #((partial manhattan-distance-3d [(:x beacon) (:y beacon) (:z beacon)]) [(:x %) (:y %) (:z %)])
-                                      nanobots))
+  [[_ x y z range]]
+  {:x (read-string x) :y (read-string y) :z (read-string z) :range (read-string range)})
 
 (def input (str/split-lines (slurp "src/advent_of_code_2018/input-dec23.txt")))
 
-(def nanobots (sort-by :radius (map (comp match-to-nanobot
-                                          (partial re-matches
-                                                   #"pos=<(\-?\d*)\,(\-?\d*)\,(\-?\d*)>\,\sr=(\d*)")) input)))
+(def nanobots (sort-by :range (map (comp match-to-nanobot
+                                         (partial re-matches
+                                                  #"pos=<(\-?\d*)\,(\-?\d*)\,(\-?\d*)>\,\sr=(\d*)")) input)))
 
 (count nanobots)
 (def beacon (last nanobots))
 
 ;solved P1, 497
-(count (filter #(<= % (:radius beacon)) (map #((partial manhattan-distance-3d [(:x beacon) (:y beacon) (:z beacon)]) [(:x %) (:y %) (:z %)])
-                                             nanobots)))
+(count (filter #(<= % (:range beacon)) (map #((partial manhattan-distance-3d [(:x beacon) (:y beacon) (:z beacon)]) [(:x %) (:y %) (:z %)])
+                                            nanobots)))
+
+(def input-small-p2 (str/split-lines "pos=<10,12,12>, r=2
+pos=<12,14,12>, r=2
+pos=<16,12,12>, r=4
+pos=<14,14,14>, r=6
+pos=<50,50,50>, r=200
+pos=<10,10,10>, r=5"))
+
+(def nanobots (sort-by :range (map (comp match-to-nanobot
+                                         (partial re-matches
+                                                  #"pos=<(\-?\d*)\,(\-?\d*)\,(\-?\d*)>\,\sr=(\d*)")) input)))
+
+(first nanobots)
+
+(:x (first (sort-by :x nanobots)))
+(:x (last (sort-by :x nanobots)))
+(:y (first (sort-by :y nanobots)))
+(:y (last (sort-by :y nanobots)))
+(:z (first (sort-by :z nanobots)))
+(:z (last (sort-by :z nanobots)))
+
+(apply + (map (fn [bot] (if (>= (:range bot) ((partial manhattan-distance-3d [12 12 12]) [(:x bot) (:y bot) (:z bot)])) 1 0)) nanobots))
+
+(str/join (map #(str "|" (:x %) ", " (:y %) ", " (:z %)) (sort-by :range nanobots)))
+
+(last nanobots)
+
+(defn write-area-to-file
+  [area
+   filename]
+  (with-open [w (clojure.java.io/writer filename)]
+    (doseq [line area]
+      (.write w line)
+      (.newLine w))))
+
+(write-area-to-file (map #(str "|" (:x %) ", " (:y %) ", " (:z %)) (sort-by :range nanobots)) "src/advent_of_code_2018/out-bots.txt")
