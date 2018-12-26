@@ -106,7 +106,15 @@
 (defn value-from-metadata
   [value-map
    references]
-  (apply + (filter #(not (nil? %)) (map #(get value-map ((comp keyword str) %)) references))))
+  ;filter out nil from non-existent keys
+  (apply + (filter #(not (nil? %))
+                   ;turn the number into string, convert into a key after that
+                   (map #(get value-map ((comp keyword str) %))
+                        references))))
+
+;sum the first node twice with the second and the ninth
+;the first node value is 33, the second is 0, the ninth doesn't exist
+(value-from-metadata {:1 33 :2 0} [1 1 2 9])
 
 (defn get-value
   [license]
