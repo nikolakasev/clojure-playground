@@ -22,7 +22,7 @@
 (defn mark-as-read
   "Drops the last entry from the history and marks a child as read in the parent entry."
   [history]
-  (if (and (= 2 (count history)) (= 0 (first (first history))))
+  (if (and (= 1 (count history)) (= 0 (first (first history))))
     []
     (conj (vec (drop-last 2 history)) [(dec (first (second (reverse history)))) (second (second (reverse history)))])))
 
@@ -80,3 +80,9 @@
           (recur new-stack (conj visited v)))))))
 
 (graph-dfs graph :A)
+
+(apply + (filter #(not (nil? %)) (map #(get {:1 33 :2 0 :3 2} ((comp keyword str) %)) [1 1 4])))
+
+(get {:1 1 :2 1 :3 2} (keyword "2"))
+
+(get (conj {:1 1} {:2 33}) :2)
