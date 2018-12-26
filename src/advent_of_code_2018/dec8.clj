@@ -81,8 +81,53 @@
 
 (graph-dfs graph :A)
 
+;calculate the value from the history and metadata
 (apply + (filter #(not (nil? %)) (map #(get {:1 33 :2 0 :3 2} ((comp keyword str) %)) [1 1 4])))
 
 (get {:1 1 :2 1 :3 2} (keyword "2"))
 
 (get (conj {:1 1} {:2 33}) :2)
+
+;the last child has the highest key number
+(last (sort (map (comp read-string name key) {:1 1 :2 1 :3 2})))
+
+(defn add-value-to-node
+  [history
+   value]
+  (let [parent (last history)
+        latest-child-if-any (last (sort (map (comp read-string name key) (:values parent))))
+        latest-child (if latest-child-if-any latest-child-if-any 0)
+        ;add the value and decrease the number of children
+        parent-with-value (update (update parent :values #(conj % {((comp keyword str) (inc latest-child)) value})) :children dec)]
+    (conj (vec (drop-last history)) parent-with-value)));(conj (vec (drop-last 2 history)) [(dec (first (second (reverse history)))) (second (second (reverse history)))])))
+
+(def hist [{:children 2 :metadata 1 :values {:1 33}} {:children 1 :metadata 1 :values {:1 2}} {:children 1 :metadata 1 :values {:1 3}}])
+
+(defn value-from-metadata
+  [value-map
+   references]
+  (apply + (filter #(not (nil? %)) (map #(get value-map ((comp keyword str) %)) references))))
+
+(defn get-value
+  [license]
+  (loop [history [{:children (first license) :metadata (second license) :values {}}]
+         rest-of-license (drop 2 license)]
+    (if (and (= 1 (count history)) (= 0 (:children (first history))))
+      (value-from-metadata (:values (first history)) (take (:metadata (first history)) rest-of-license))
+      (let [parent (last history)
+            metadata-entries (:metadata parent)]
+        (if (= 0 (:children parent))
+          (if (empty? (:values parent))
+            ;this is a leaf node, it's value is the sum of its metadata entries
+            (recur (add-value-to-node (drop-last history) (apply + (take metadata-entries rest-of-license)))
+                   (drop metadata-entries rest-of-license))
+            ;calculate using the metadata entries as references to children
+            (let [references (take metadata-entries rest-of-license)
+                  value (value-from-metadata (:values parent) references)]
+              (recur (add-value-to-node (drop-last history) value)
+                     (drop metadata-entries rest-of-license))))
+          (recur (conj history {:children (first rest-of-license) :metadata (second rest-of-license) :values {}})
+                 (drop 2 rest-of-license)))))))
+
+;23960 solved P2
+(get-value input)
