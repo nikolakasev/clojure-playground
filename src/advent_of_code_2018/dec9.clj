@@ -25,31 +25,63 @@
 
 (conj tree 8)
 
-(tree/ft-concat 0 (rest tree))
+(defn marble-from-tree
+  [marble-position
+   tree]
+  (let [[left marble right] (tree/ft-split-at tree marble-position)]
+    [marble (tree/ft-concat left right)]))
+
+(marble-from-tree 1 tree)
+
+(defn player-scores
+  [player
+   points
+   players-map]
+  (if (nil? (get players-map player))
+    (conj players-map [player points])
+    (update players-map player #(+ % points))))
 
 (defn put-marble
-  [coll
+  [[marble-ring current-position player-map]
    [marble player]]
   ;(rem 0 23) returns 0
   (if (and (= 0 (rem marble 23)) (not (= 0 marble)))
-    (inc coll)
-    coll))
+    (let [seven-marbles-back (- current-position 7)
+          marble-to-take (if (>= seven-marbles-back 0)
+                           seven-marbles-back
+                           (- (count marble-ring) (- 7 current-position)))
+          [score ring] (marble-from-tree marble-to-take marble-ring)]
+      [ring marble-to-take (player-scores player (+ marble score) player-map)])
+    (let [[ring new-position] (marble-in-tree marble marble-ring current-position)]
+      [ring new-position player-map])))
 
 (defn marble-play
   [players
    last-marble]
-  (reduce put-marble
-          ;game starts with marble 0 in play
-          (apply tree/counted-double-list [0])
-          ;to be able to extract in put-marble
-          (map vec
-               ;zip the players and marbles, so each player is assigned a marble
-               (partition 2 (interleave (range 1 (inc last-marble))
-                                        (cycle (range 1 (inc players))))))))
+  (let [[_ _ player-map] (reduce put-marble
+                          ;game starts with marble 0 in play, position of 0 and no scores
+                                 [(apply tree/counted-double-list [0]) 0 {}]
+                          ;to be able to extract in put-marble
+                                 (map vec
+                               ;zip the players and marbles, so each player is assigned a marble
+                                      (partition 2 (interleave (range 1 (inc last-marble))
+                                                               (cycle (range 1 (inc players)))))))]
+    (second (first (reverse (sort-by last player-map))))))
+
+(second (first (reverse (sort-by last (conj {1 100, 2 300} [3 200])))))
+
+(player-scores 2 50 {1 100, 2 300})
 
 (get {1 100, 2 300} 2)
 
-(marble-play 1 20)
+(conj {1 100, 2 300} [3 400])
+
+;NullPointerException
+;(update {1 100, 2 300} 3 inc)
+
+(update {} :a (fnil inc 0))
+
+(second (last (marble-play 9 25)))
 
 (map vec (partition 2 (interleave (range 1 9) (cycle (range 1 4)))))
 
@@ -65,6 +97,7 @@
 (= 37305 (marble-play 30 5807))
 
 ;416 players; last marble is worth 71975 points
+;439341 solved P1
 (marble-play 416 71975)
 
 (def dl (tree/double-list 4 5 6 7))
