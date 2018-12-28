@@ -7,5 +7,6 @@
                            [org.clojure/math.combinatorics "0.1.4"]
                            [org.clojure/math.numeric-tower "0.0.4"]
                            [aysylu/loom "1.0.2"]
-                           [compliment "0.3.8"]]
+                           [compliment "0.3.8"]
+                           [org.clojure/data.finger-tree "0.0.3"]]
             :global-vars {*warn-on-reflection* true})
