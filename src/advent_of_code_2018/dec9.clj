@@ -81,8 +81,6 @@
 
 (update {} :a (fnil inc 0))
 
-(second (last (marble-play 9 25)))
-
 (map vec (partition 2 (interleave (range 1 9) (cycle (range 1 4)))))
 
 ;10 players; last marble is worth 1618 points: high score is 8317
