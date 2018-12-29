@@ -97,8 +97,10 @@
 (= 37305 (marble-play 30 5807))
 
 ;416 players; last marble is worth 71975 points
-;439341 solved P1
-(marble-play 416 71975)
+;439341 solved P1, runs for about 4 seconds
+(time (marble-play 416 71975))
+;Elapsed time: 605268.585448 msecs, solves P2
+(time (marble-play 416 (* 100 71975)))
 
 (def dl (tree/double-list 4 5 6 7))
 
@@ -119,9 +121,3 @@
 (def parts
   (let [[left _ right] (tree/ft-split-at cdl 5)]
     {:left left, :right right}))
-
-(identity parts)
-
-(rem 45 23)
-
-(range 0 3)
