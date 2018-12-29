@@ -9,4 +9,4 @@
                            [aysylu/loom "1.0.2"]
                            [compliment "0.3.8"]
                            [org.clojure/data.finger-tree "0.0.3"]]
-            :global-vars {*warn-on-reflection* true})
+            :global-vars {*warn-on-reflection* false})
