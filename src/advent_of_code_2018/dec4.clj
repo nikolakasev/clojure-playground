@@ -1,10 +1,6 @@
 (ns advent-of-code-2018.dec4
   (:require [clojure.string :as str]))
 
-(re-seq #"\d+" "[1518-02-27 23:58] Guard #1667 begins shift")
-
-(def regex #"\d+")
-
 (def input-small (str/split-lines "[1518-11-01 00:00] Guard #10 begins shift
 [1518-11-01 00:05] falls asleep
 [1518-11-01 00:25] wakes up
@@ -31,15 +27,11 @@
   (update-in (update-in guard-map [guard :asleep] (fnil #(+ % slept-minutes) 0))
              [guard :minutes] (fnil #(concat % (range asleep-minute (+ asleep-minute slept-minutes))) ())))
 
-(def m {99 {:asleep 12 :minutes []}, 100 {:asleep 10 :minutes [11 12 13]}})
+(def m {{99 {:minutes (list 11 12 13), :asleep 3}} {10 {:minutes (), :asleep 8}}})
 
-(update-in m [9 :asleep] (fnil #(+ % 10) 0))
-
-(guard-awakes 99 36 10 {9 {:asleep 5 :minutes (list 1)}})
+(guard-awakes 99 36 10 m)
 
 (sort-by (comp :asleep second) (guard-awakes 99 36 10 {9 {:asleep 5 :minutes (list 1)}}))
-
-(update-in [1 {:a 2 :b 3 :c 4}, 2 {:a 1 :z 3}] [2 :a] (fnil inc 5))
 
 (defn watch-guards
   [journal-entries]
@@ -48,13 +40,13 @@
         wakes-regex #".*:0?(\d+)] wakes up"]
     (loop [guard nil
            asleep nil
-           awake nil
            guard-map {}
            entries-left journal-entries]
       (if (empty? entries-left)
         (let [guard (last (sort-by (comp :asleep second) guard-map))]
-          (* (first guard)
-             (first (last (sort-by second (frequencies ((comp :minutes second) guard)))))))
+          [(* (first guard)
+              (first (last (sort-by second (frequencies ((comp :minutes second) guard))))))
+           guard-map])
         (let [entry (first entries-left)
               guard? (re-matches guard-regex entry)
               asleep? (re-matches asleep-regex entry)
@@ -62,20 +54,17 @@
           (if guard?
             (recur (read-string (last guard?))
                    nil
-                   nil
                    guard-map
                    (rest entries-left))
             (if asleep?
               (recur guard
                      (read-string (last asleep?))
-                     nil
                      guard-map
                      (rest entries-left))
               (if awake?
                 (let [awake (read-string (last awake?))]
                   (recur guard
-                         asleep
-                         awake
+                         nil
                          (guard-awakes guard asleep (- awake asleep) guard-map)
                          (rest entries-left)))))))))))
 
@@ -89,4 +78,13 @@
 ;125444 solves P1
 (watch-guards input)
 
+(def g (second (watch-guards input)))
+
+;(* 733 25) solves P2
+(last (sort-by (comp second second)
+               (map (fn [g] [(first g) (last ((partial sort-by second)
+                                              (frequencies ((comp :minutes second) g))))])
+                    g)))
+
+;how to update in a nested structure
 (update-in {:a {:b {:c 2}}} [:a :b :c] + 20)
