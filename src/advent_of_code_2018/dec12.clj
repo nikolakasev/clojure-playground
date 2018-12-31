@@ -108,8 +108,6 @@
 
 (set/difference #{0 3 4 5 6} #{})
 
-(apply max #{})
-
 (apply-instruction (string-to-generation input-small 0) 0 "..#..")
 
 ;algo should work on the example
