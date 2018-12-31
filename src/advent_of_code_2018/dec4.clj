@@ -28,20 +28,33 @@
    asleep-minute
    slept-minutes
    guard-map]
-  guard-map)
+  (update-in (update-in guard-map [guard :asleep] (fnil #(+ % slept-minutes) 0))
+             [guard :minutes] (fnil #(concat % (range asleep-minute (+ asleep-minute slept-minutes))) ())))
+
+(def m {99 {:asleep 12 :minutes []}, 100 {:asleep 10 :minutes [11 12 13]}})
+
+(update-in m [9 :asleep] (fnil #(+ % 10) 0))
+
+(guard-awakes 99 36 10 {9 {:asleep 5 :minutes (list 1)}})
+
+(sort-by (comp :asleep second) (guard-awakes 99 36 10 {9 {:asleep 5 :minutes (list 1)}}))
+
+(update-in [1 {:a 2 :b 3 :c 4}, 2 {:a 1 :z 3}] [2 :a] (fnil inc 5))
 
 (defn watch-guards
   [journal-entries]
   (let [guard-regex #".* Guard #(\d+) .*"
-        asleep-regex #".*:(\d+)] falls asleep"
-        wakes-regex #".*:(\d+)] wakes up"]
+        asleep-regex #".*:0?(\d+)] falls asleep"
+        wakes-regex #".*:0?(\d+)] wakes up"]
     (loop [guard nil
            asleep nil
            awake nil
            guard-map {}
            entries-left journal-entries]
       (if (empty? entries-left)
-        guard-map
+        (let [guard (last (sort-by (comp :asleep second) guard-map))]
+          (* (first guard)
+             (first (last (sort-by second (frequencies ((comp :minutes second) guard)))))))
         (let [entry (first entries-left)
               guard? (re-matches guard-regex entry)
               asleep? (re-matches asleep-regex entry)
@@ -67,13 +80,13 @@
                          (rest entries-left)))))))))))
 
 (read-string (last (re-matches #".* Guard #(\d+) .*" "[1518-11-05 00:03] Guard #99 begins shift")))
-(re-matches #".*:(\d+)] falls asleep" "[1518-11-05 00:45] falls asleep")
-(re-matches #".*:(\d+)] wakes up" "[1518-11-05 00:55] wakes up")
+(re-matches #".*:0?(\d+)] falls asleep" "[1518-11-05 00:15] falls asleep")
+(re-matches #".*:0?(\d+)] wakes up" "[1518-11-05 00:55] wakes up")
 
 (watch-guards input-small)
 
-(def m {1 {:value 0, :active false}, 2 {:value 0, :active false}})
-
-(update-in m [1] assoc :value 1 :active true)
+(def input (str/split-lines (slurp "src/advent_of_code_2018/input-dec4.txt")))
+;125444 solves P1
+(watch-guards input)
 
 (update-in {:a {:b {:c 2}}} [:a :b :c] + 20)
