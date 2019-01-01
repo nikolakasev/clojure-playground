@@ -98,7 +98,7 @@
 ;439341 solved P1, runs for about 4 seconds
 (time (marble-play 416 71975))
 ;Elapsed time: 605268.585448 msecs, solves P2
-(time (marble-play 416 (* 100 71975)))
+;(time (marble-play 416 (* 100 71975)))
 
 (def dl (tree/double-list 4 5 6 7))
 

@@ -422,4 +422,4 @@
 (handicap-goblins input)
 
 ;with an attack of 30, elves win with 41804, solved P2
-(handicap-goblins (slurp "src/advent_of_code_2018/input-dec15.txt"))
+;(handicap-goblins (slurp "src/advent_of_code_2018/input-dec15.txt"))

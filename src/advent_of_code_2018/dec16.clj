@@ -23,18 +23,4 @@ After:  [3, 2, 3, 2]")
 (re-matches #"(\d*)\s(\d*)\s(\d*)\s(\d*)" "14 2 1 3")
 (re-matches #"After:  \[(\d*)\,\s(\d*)\,\s(\d*)\,\s(\d*)\]" "After:  [3, 2, 2, 1]")
 
-[3 2 1 1] addi 0 7 3 [3 2 1 (+3 7)]
-
 (eval (read-string "[3 2 1 (+ 3 7)]"))
-
-(defn addr
-  [[zero one two three]
-   [_ A B C]]
-  [zero one two three])
-
-(defn addi
-  [[zero one two three]
-   [_ A B C]]
-  [zero one two three])
-
-(addi [3 2 1 1] [9 2 1 2])
