@@ -67,3 +67,7 @@
                   (map char (range (int \a) (+ 1 (int \z)))))))
 
 (map char (range (int \a) (+ 1 (int \z))))
+
+(-> {:year 2018}
+    (update :year inc)
+    (with-meta {:happy true}))

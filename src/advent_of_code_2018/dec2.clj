@@ -28,8 +28,6 @@
 
 (negative-quotient 8 2)
 
-(val {:a 1})
-
 (= (first (vals {:a 1})) 1)
 
 (apply map vector [[:a :b :c] [:d :e :f]])

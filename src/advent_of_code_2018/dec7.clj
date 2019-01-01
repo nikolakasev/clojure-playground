@@ -42,10 +42,6 @@ Step F must be finished before step E can begin.")))))))
       (first (sort enabled))
       (first enabled))))
 
-(keyword (enabled input-small))
-;sort on keywords, nice!
-(sort (enabled input))
-
 (set (map keyword (distinct (mapcat second [[:C ["A" "F"]] [:A ["B" "D"]] [:B ["E"]] [:D ["E"]] [:F ["E"]]]))))
 
 (set (map first [[:C ["A" "F"]] [:A ["B" "D"]] [:B ["E"]] [:D ["E"]] [:F ["E"]]]))
@@ -57,7 +53,7 @@ Step F must be finished before step E can begin.")))))))
   (filter #(not (= step (first %))) remaining-steps))
 
 ;demonstrates how a simple DSL can be built
-(enabled (execute-step :F (enabled (execute-step :D (execute-step :B (execute-step :A (execute-step :C input-small)))))))
+;(enabled (execute-step :F (enabled (execute-step :D (execute-step :B (execute-step :A (execute-step :C input-small)))))))
 
 (defn plan
   "Determines the order in which `input` steps should be completed."
@@ -78,8 +74,6 @@ Step F must be finished before step E can begin.")))))))
 (= "IBJTUWGFKDNVEYAHOMPCQRLSZX" (plan input))
 
 (int \A)
-
-(char "A")
 
 (defn time-it-takes
   "Takes a `step` keyword and returns it with the time it takes to execute."
