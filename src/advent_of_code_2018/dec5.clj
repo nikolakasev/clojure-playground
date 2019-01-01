@@ -1,37 +1,69 @@
 (ns advent-of-code-2018.dec5
-  (:require [clojure.string :as str]))
+  (:require [clojure.string :as str])
+  (:require [clojure.math.numeric-tower :as math]))
 
 (def input-small "dabAcCaCBAcCcaDA")
 
-(vec input-small)
+(defn react?
+  [unit-one
+   unit-two]
+  (= 32 (math/abs (- (int unit-one) (int unit-two)))))
 
-(str/lower-case \B)
-
-(defn drop-opposite-polarity
-  [input]
-  (loop [units-remaining []
-         units-left input]
-    (if (<= (count units-left) 1)
-      (concat units-remaining units-left)
-      (let [unit (first units-left)
-            neighbour (second units-left)]
-        (if (or (= (str unit) (str/lower-case neighbour)) (= (str unit) (str/upper-case neighbour)))
-          (recur units-remaining (drop 2 units-left))
-          (recur (conj units-remaining unit) (rest units-left)))))))
+(react? \a \z)
 
 (defn reduce-polymer
-  [input]
-  (loop [polymer-so-far input
-         polymer-length (count input)]
-    (let [reduced-polymer (drop-opposite-polarity polymer-so-far)]
-      (if (= polymer-length (count reduced-polymer))
-        (str/join reduced-polymer)
-        (do
-          (println "reduced to " (count reduced-polymer))
-          (recur reduced-polymer (count reduced-polymer)))))))
+  [polymer]
+  (reduce (fn [so-far unit]
+            (if (or (empty? so-far) (not (react? (peek so-far) unit)))
+              (conj so-far unit)
+              (pop so-far)))
+          []
+          polymer))
 
-(= 10 (count (reduce-polymer "dabAcCaCBAcCcaDA")))
+(= 10 (count (reduce-polymer input-small)))
 
-(def input (vec (slurp "src/advent_of_code_2018/input-dec5.txt")))
+(reduce-polymer "xabcCdDBA")
 
+(def input (str/trim-newline (slurp "src/advent_of_code_2018/input-dec5.txt")))
+
+;solves P1
 (count (reduce-polymer input))
+
+(mod 29 5)
+
+(- (int \b) (int \B))
+
+(def large-vec (vec (range 0 10000)))
+
+(conj (vec "abcds") \c)
+
+(int \z)
+
+(defn reduce-polymer-tweaked
+  [polymer
+   disregard-set]
+  (reduce (fn [so-far unit]
+            (if (contains? disregard-set unit)
+              so-far
+              (if (or (empty? so-far) (not (react? (peek so-far) unit)))
+                (conj so-far unit)
+                (pop so-far))))
+          []
+          polymer))
+
+(reduce-polymer-tweaked "dabAcCaCBAcCcaDA" (set [\c \C]))
+
+(range (int \a) (+ 1 (int \z)))
+
+(- (int \a) 32) (int \A) (- 97 65)
+
+(first (sort (map #(count (reduce-polymer-tweaked input-small (set [% (first (map char (str/upper-case %)))])))
+                  (map char (range (int \a) (+ 1 (int \z)))))))
+
+(set [\d (map char (str/upper-case \d))]) (map char "D")
+
+;4944 solves P2
+(first (sort (map #(count (reduce-polymer-tweaked input (set [% (first (map char (str/upper-case %)))])))
+                  (map char (range (int \a) (+ 1 (int \z)))))))
+
+(map char (range (int \a) (+ 1 (int \z))))
