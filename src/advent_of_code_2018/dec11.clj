@@ -26,3 +26,19 @@
             [x y])))
 
 (grid-to-power-map 5 5 8)
+
+(defn three-by-three-power
+  [power-map
+   max-x
+   max-y]
+  (for [y (range 2 max-y)
+        x (range 2 max-x)]
+    [(- x 1) (- y 1) (apply + (map (partial get-in power-map) [[(- x 1) (- y 1)] [x (- y 1)] [(+ x 1) (- y 1)]
+                                                               [(- x 1) y] [x y] [(+ x 1) y]
+                                                               [(- x 1) (+ y 1)] [x (+ y 1)] [(+ x 1) (+ y 1)]]))]))
+
+(last (sort-by last (three-by-three-power (grid-to-power-map 300 300 18) 300 300)))
+(last (sort-by last (three-by-three-power (grid-to-power-map 300 300 42) 300 300)))
+
+;x:235 y:18 with a power level of 31 solves P1
+(last (sort-by last (three-by-three-power (grid-to-power-map 300 300 5153) 300 300)))
