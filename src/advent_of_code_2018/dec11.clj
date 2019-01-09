@@ -27,7 +27,7 @@
 
 (grid-to-power-map 5 5 8)
 
-(defn any-square-power
+(defn any-square-power-naive
   [power-map
    max-x
    max-y
@@ -40,18 +40,19 @@
                                                                  square-x (range x (+ x square-size))]
                                                              [square-x square-y])))])))))
 
-(any-square-power (grid-to-power-map 300 300 18) 300 300 3)
-(any-square-power (grid-to-power-map 300 300 42) 300 300 3)
+(any-square-power-naive (grid-to-power-map 300 300 18) 300 300 3)
+(any-square-power-naive (grid-to-power-map 300 300 42) 300 300 3)
 
 (into (sorted-map) [[0 0]])
 
-;x:235 y:18 with a power level of 31 solves P1
-(any-square-power (grid-to-power-map 300 300 5153) 300 300 3)
+;x:235 y:18 with a power level of 31 solves P1 "Elapsed time: 2493.677706 msecs"
+(time (= [235 18 3 31] (any-square-power-naive (grid-to-power-map 300 300 5153) 300 300 3)))
 
-(any-square-power (grid-to-power-map 300 300 18) 300 300 16)
+;"Elapsed time: 15049.54854 msecs"
+(time (= [90 269 16 113] (any-square-power-naive (grid-to-power-map 300 300 18) 300 300 16)))
 
 ;this is too slow
-;(last (sort-by last (map (partial any-square-power (grid-to-power-map 300 300 5153) 300 300) (range 2 300))))
+;(last (sort-by last (map (partial any-square-power-naive (grid-to-power-map 300 300 5153) 300 300) (range 2 300))))
 
 (get-in (grid-to-power-map 10 10 5153) [1 0] 0)
 
@@ -73,4 +74,28 @@
                 y (range 1 (+ max-y 1))]
             [x y])))
 
-(summed-area-table-from-power-map (grid-to-power-map 10 10 5153) 10 10)
+(count (summed-area-table-from-power-map (grid-to-power-map 5 5 5153) 5 5))
+
+(defn any-square-power
+  [summed-area-table
+   max-x
+   max-y
+   square-size]
+  (do (println "size: " square-size)
+      (last (sort-by last (for [x (range 1 (- max-x (- square-size 2)))
+                                y (range 1 (- max-y (- square-size 2)))]
+                            [x y square-size (-> (get-in summed-area-table [(+ x (dec square-size)) (+ y (dec square-size))])
+                                                 (+ (get-in summed-area-table [(- x 1) (- y 1)]))
+                                                 (- (get-in summed-area-table [(- x 1) (+ y (dec square-size))]))
+                                                 (- (get-in summed-area-table [(+ x (dec square-size)) (- y 1)])))])))))
+
+;"Elapsed time: 2230.757911 msecs"
+(time (any-square-power (summed-area-table-from-power-map (grid-to-power-map 300 300 5153) 300 300) 300 300 3))
+
+;"Elapsed time: 2255.771232 msecs", the same amount of time because of the same amount (4) of lookups
+(time (any-square-power (summed-area-table-from-power-map (grid-to-power-map 300 300 18) 300 300) 300 300 16))
+
+;[236 227 12 110] solves P2, "Elapsed time: 85826.857775 msecs"
+(time (last (sort-by last (map (partial any-square-power
+                                        (summed-area-table-from-power-map (grid-to-power-map 300 300 5153) 300 300) 300 300)
+                               (range 2 300)))))
