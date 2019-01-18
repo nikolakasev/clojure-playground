@@ -28,12 +28,13 @@
                                        (chocolate-recipe (mod (+ one score-one 1) length')
                                                          (mod (+ two score-two 1) length')
                                                          length'
-                                                         (concat so-far digits))))))
+                                                         (apply conj so-far digits))))))
 
 (nth [3 7 1 0 1 0] (mod (+ 1 7 1) 6))
 
 (take 25 (chocolate-recipe))
 
+;solves P1
 (take 10 (drop (- 286051 2) (chocolate-recipe)))
 
 (digits 8)
