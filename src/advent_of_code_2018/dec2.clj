@@ -128,6 +128,7 @@ urzhyfdplbmeqvrjtbiosngkxc")
 ;(filter one-character-difference? [["fghij" "fguij"]])
 (filter (fn [[one two]] (one-character-difference? one two)) [["fghij" "fguij"]])
 
-(filter (fn [[one two]] (one-character-difference? one two)) (combo/combinations (clojure.string/split-lines puzzle-input) 2))
+(filter (fn [[one two]] (one-character-difference? one two))
+        (combo/combinations (clojure.string/split-lines puzzle-input) 2))
 
 ;"wrziyfdmlumeqvaatbiosngkxc" "wrziyfdmlumeqvaatbiosngkoc"

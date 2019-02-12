@@ -64,8 +64,10 @@
 (apply + (map (fn [[one two]] (overlapping-area (second (box-coordinates one)) (nth (box-coordinates one) 2) (second (box-coordinates two)) (nth (box-coordinates two) 2))) (combo/combinations (clojure.string/split-lines (slurp "src/advent_of_code_2018/input-dec3.txt")) 2)))
 
 ;alternative of (frequencies list)
-(count (filter (fn [[_ list]] (> (count list) 1)) (group-by identity [[1 2] [1 2] [3 4] [5 6] [1 2] [5 6] [5 7]])))
+(count (filter (fn [[_ list]] (> (count list) 1))
+               (group-by identity [[1 2] [1 2] [3 4] [5 6] [1 2] [5 6] [5 7]])))
 
+;f(x) = x
 (identity [1 2])
 
 (defn area-of-fabric
